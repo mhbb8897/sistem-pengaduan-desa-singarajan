@@ -28,6 +28,7 @@ class _BottomNavigationBarExampleState
     color: Colors.green,
   );
   static const List<Widget> _widgetOptions = <Widget>[
+      HomePage(),
     Text('Index 0: Home', style: optionStyle),
     Text('Index 1: Business', style: optionStyle),
     Text('Index 2: Business', style: optionStyle),
