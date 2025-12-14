@@ -4,6 +4,8 @@ import '../controllers/post_controller.dart';
 class PostPage extends StatelessWidget {
   final controller = PostController();
 
+  PostPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../presentation/pages/home_page.dart';
 
 void main() => runApp(BottomNavigationBarExampleApp());
 
@@ -27,12 +28,11 @@ class _BottomNavigationBarExampleState
     fontWeight: FontWeight.bold,
     color: Colors.green,
   );
-  static const List<Widget> _widgetOptions = <Widget>[
+  static final List<Widget> _widgetOptions = <Widget>[
       HomePage(),
-    Text('Index 0: Home', style: optionStyle),
-    Text('Index 1: Business', style: optionStyle),
-    Text('Index 2: Business', style: optionStyle),
-    Text('Index 3: School', style: optionStyle),
+    Text('Index 1: Pengaduan', style: optionStyle),
+    Text('Index 2: Notifikasi', style: optionStyle),
+    Text('Index 3: Profil', style: optionStyle),
   ];
 
   void _onItemTapped(int index) {

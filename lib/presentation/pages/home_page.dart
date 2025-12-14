@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../';
-import 'package:sim';
+import '../../data/services/post_service.dart';
+import '../../data/models/post_model.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -17,36 +17,18 @@ class HomePage extends StatelessWidget {
         }
 
         if (snapshot.hasError) {
-          return const Center(child: Text('Terjadi kesalahan'));
+          return const Center(child: Text('Gagal memuat data'));
         }
 
         final posts = snapshot.data!;
 
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
           itemCount: posts.length,
           itemBuilder: (context, index) {
-            final post = posts[index];
-
             return Card(
-              elevation: 3,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(post.body),
-                  ],
-                ),
+              child: ListTile(
+                title: Text(posts[index].title),
+                subtitle: Text(posts[index].body),
               ),
             );
           },
@@ -55,3 +37,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
