@@ -6,6 +6,10 @@ class PostService {
   Future<List<PostModel>> fetchPosts() async {
     final response = await http.get(
       Uri.parse('https://jsonplaceholder.typicode.com/posts?_limit=4'),
+      headers: {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': 'application/json',
+    },
     );
 
     if (response.statusCode == 200) {

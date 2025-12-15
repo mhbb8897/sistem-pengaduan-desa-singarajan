@@ -5,7 +5,6 @@ class PostRepository {
   final PostService service = PostService();
 
   Future<List<PostModel>> getPosts() async {
-    final data = await service.fetchPosts();
-    return data.map((e) => PostModel.fromJson(e)).toList();
+    return await service.fetchPosts();
   }
 }

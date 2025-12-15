@@ -2,14 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-class PengaduanPage extends StatefulWidget {
-  const PengaduanPage({super.key});
+class ReportPage extends StatefulWidget {
+  const ReportPage({super.key});
 
   @override
-  State<PengaduanPage> createState() => _PengaduanPageState();
+  State<ReportPage> createState() => _ReportPageState();
 }
 
-class _PengaduanPageState extends State<PengaduanPage> {
+class _ReportPageState extends State<ReportPage> {
   String _kategori = 'Fasilitas';
 
   final _judul = TextEditingController();

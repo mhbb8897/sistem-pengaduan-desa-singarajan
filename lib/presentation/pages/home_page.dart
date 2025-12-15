@@ -50,9 +50,11 @@ class _HomePageState extends State<HomePage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasError) {
-                  return const Center(child: Text('Gagal memuat data'));
-                }
+if (snapshot.hasError) {
+  return Center(
+    child: Text(snapshot.error.toString()),
+  );
+}
 
                 final posts = snapshot.data!;
 

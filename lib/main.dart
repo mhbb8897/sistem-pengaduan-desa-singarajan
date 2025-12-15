@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:simpedesa/presentation/pages/profile_page.dart';
 import '../../presentation/pages/home_page.dart';
 import '../../presentation/pages/report_page.dart';
+import '../../presentation/pages/notification_page.dart';
+
 
 void main() => runApp(BottomNavigationBarExampleApp());
 
@@ -37,9 +40,9 @@ class _BottomNavigationBarExampleState
     super.initState();
     _widgetOptions = [
       const HomePage(),
-      const PengaduanPage(),
-      const Text('Notifikasi'),
-      const Text('Profil'),
+      const ReportPage(),
+      const NotificationPage(),
+      const ProfilePage(),
     ];
   }
 
