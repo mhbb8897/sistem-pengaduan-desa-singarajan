@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../presentation/pages/home_page.dart';
+import '../../presentation/pages/report_page.dart';
 
 void main() => runApp(BottomNavigationBarExampleApp());
 
@@ -28,12 +29,19 @@ class _BottomNavigationBarExampleState
     fontWeight: FontWeight.bold,
     color: Colors.green,
   );
-  static final List<Widget> _widgetOptions = <Widget>[
-      HomePage(),
-    Text('Index 1: Pengaduan', style: optionStyle),
-    Text('Index 2: Notifikasi', style: optionStyle),
-    Text('Index 3: Profil', style: optionStyle),
-  ];
+
+  late final List<Widget> _widgetOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    _widgetOptions = [
+      const HomePage(),
+      const PengaduanPage(),
+      const Text('Notifikasi'),
+      const Text('Profil'),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,15 +53,12 @@ class _BottomNavigationBarExampleState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Aku Flutter')),
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+      body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
       bottomNavigationBar: BottomNavigationBar(
         // Configuration bottom bar
         type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.group_rounded),
             label: 'Pengaduan',

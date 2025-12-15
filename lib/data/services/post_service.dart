@@ -5,7 +5,7 @@ import '../models/post_model.dart';
 class PostService {
   Future<List<PostModel>> fetchPosts() async {
     final response = await http.get(
-      Uri.parse('https://jsonplaceholder.typicode.com/posts'),
+      Uri.parse('https://jsonplaceholder.typicode.com/posts?_limit=4'),
     );
 
     if (response.statusCode == 200) {
