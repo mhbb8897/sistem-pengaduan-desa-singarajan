@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\UserSecureProfile;
 
 class User extends Authenticatable
 {
@@ -18,21 +19,14 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+    protected $fillable = ['name', 'email', 'password'];
 
     /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password', 'remember_token'];
 
     /**
      * Get the attributes that should be cast.
@@ -45,5 +39,23 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            UserSecureProfile::create([
+                'user_id' => $user->id,
+                'encrypted_identity' => Str::upper(Str::random(4)),
+                'encrypted_aes_key' => Str::upper(Str::random(4)),
+                'hmac_signature' => Str::upper(Str::random(4)),
+                'iv' => Str::upper(Str::random(4)),
+            ]);
+        });
+    }
+    // Relation
+    public function secureProfile()
+    {
+        return $this->hasOne(UserSecureProfile::class);
     }
 }
