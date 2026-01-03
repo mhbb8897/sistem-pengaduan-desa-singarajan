@@ -9,16 +9,21 @@ return new class extends Migration {
     {
         Schema::create('complaints', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
-            $table->text('encrypted_content');
-            $table->text('encrypted_aes_key');
-            $table->string('hmac_signature', 255);
-            $table->string('iv', 64);
-
-            $table->string('category', 100);
+            // Metadata (Plaintext untuk Query & Filter)
+            $table->string('title'); 
+            $table->string('category'); // Fasilitas, Pelanggaran HAM, dll
             $table->enum('status', ['diajukan', 'diproses', 'selesai'])->default('diajukan');
-            $table->timestamp('created_at')->useCurrent();
+
+            // Data Keamanan (Encrypted)
+            $table->longText('encrypted_content'); // Payload JSON terenkripsi AES
+            $table->text('encrypted_aes_key');    // Kunci AES terenkripsi RSA
+            $table->string('iv');                  // IV untuk AES
+
+            // Data Tambahan
+            $table->string('attachment_path')->nullable(); 
+            $table->timestamps();
         });
     }
 

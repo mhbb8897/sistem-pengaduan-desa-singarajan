@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\UserSecureProfile;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -40,17 +41,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
     protected static function booted()
     {
         static::created(function ($user) {
-            UserSecureProfile::create([
-                'user_id' => $user->id,
-                'encrypted_identity' => Str::upper(Str::random(4)),
-                'encrypted_aes_key' => Str::upper(Str::random(4)),
-                'hmac_signature' => Str::upper(Str::random(4)),
-                'iv' => Str::upper(Str::random(4)),
-            ]);
+            // Hanya buat jika belum ada, dan tidak akan diupdate lagi
+            UserSecureProfile::firstOrCreate(
+                ['user_id' => $user->id], // Kriteria pencarian
+                [
+                    'rsa_public_key' => Str::upper(Str::random(4)),
+                    'rsa_private_key' => Str::upper(Str::random(4)),
+                    'aes_key' => Str::upper(Str::random(4)),
+                    'hmac_signature' => Str::upper(Str::random(4)),
+                    'iv' => Str::upper(Str::random(4)),
+                ],
+            );
         });
     }
     // Relation

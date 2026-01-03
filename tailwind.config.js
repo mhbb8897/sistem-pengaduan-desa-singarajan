@@ -8,6 +8,8 @@ export default {
         './resources/**/*.blade.php',
         './resources/**/*.js',
         './resources/**/*.vue',
+        './vendor/filament/**/*.blade.php',
+        './vendor/danharrin/filament-blog/resources/views/**/*.blade.php',
     ],
     theme: {
         extend: {

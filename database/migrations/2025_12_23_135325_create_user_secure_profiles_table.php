@@ -11,11 +11,13 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('user_secure_profiles', function (Blueprint $table) {
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('encrypted_identity', 10)->nullable(false)->unique();
-            $table->string('encrypted_aes_key', 10)->nullable(false)->unique();
-            $table->string('hmac_signature', 10)->nullable(false)->unique();
-            $table->string('iv', 10)->nullable(false)->unique();
+            $table->unsignedBigInteger('user_id')->primary();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->string('rsa_public_key', 10)->unique();
+            $table->string('rsa_private_key', 10)->unique();
+            $table->string('aes_key', 10)->unique();
+            $table->string('hmac_signature', 10)->unique();
+            $table->string('iv', 10)->unique();
             $table->timestamps();
         });
     }

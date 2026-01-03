@@ -29,13 +29,13 @@ class UserSeeder extends Seeder
                 'created_at' => now(), // default password
             ]);
             $user->assignRole($role);
-            UserSecureProfile::create([
-                'user_id' => $user->id,
-                'encrypted_identity' => Str::upper(Str::random(4)),
-                'encrypted_aes_key' => Str::upper(Str::random(4)),
-                'hmac_signature' => Str::upper(Str::random(4)),
-                'iv' => Str::upper(Str::random(4)),
-            ]);
+            // UserSecureProfile::create([
+            //     'user_id' => $user->id,
+            //     'encrypted_identity' => Str::upper(Str::random(4)),
+            //     'encrypted_aes_key' => Str::upper(Str::random(4)),
+            //     'hmac_signature' => Str::upper(Str::random(4)),
+            //     'iv' => Str::upper(Str::random(4)),
+            // ]);
         };
         $createUser('User 1', 'user1@example.com', 'user');
         $createUser('User 2', 'user2@example.com', 'user');
