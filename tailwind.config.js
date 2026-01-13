@@ -9,6 +9,7 @@ export default {
         './resources/**/*.js',
         './resources/**/*.vue',
         './vendor/filament/**/*.blade.php',
+        './app/Livewire/**/*.php', // Tambahkan ini agar file Livewire terpantau
         './vendor/danharrin/filament-blog/resources/views/**/*.blade.php',
     ],
     theme: {

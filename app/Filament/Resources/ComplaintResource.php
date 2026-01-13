@@ -10,7 +10,8 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -30,16 +31,40 @@ class ComplaintResource extends Resource
                 TextColumn::make('status')->badge(),
                 TextColumn::make('created_at')->dateTime(),
             ])
-            ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->options([
-                        'Fasilitas' => 'Fasilitas',
-                        'Kinerja Perangkat' => 'Kinerja Perangkat',
-                        'Pelanggaran HAM' => 'Pelanggaran HAM',
-                    ]),
-            ])
             ->actions([
-                Tables\Actions\ViewAction::make(), // WAJIB untuk melihat hasil dekripsi
+                Action::make('viewDetail')
+                    ->label('Lihat')
+                    ->icon('heroicon-o-eye')
+                    ->modalWidth(MaxWidth::ThreeExtraLarge)
+                    ->modalHeading('View Complaint')
+                    // 1. Tampilan Detail Menggunakan View Custom
+                    ->modalContent(fn (Complaint $record) => view('filament.pages.complaint-modal-detail', ['record' => $record]))
+
+                    // 2. Form untuk Update Status di bagian bawah modal
+                    ->form([
+                        \Filament\Forms\Components\Select::make('status')
+                            ->options([
+                                'diajukan' => 'Diajukan',
+                                'diproses' => 'Diproses',
+                                'selesai' => 'Selesai',
+                            ])
+                            ->required()
+                            ->label('Update Status Pengaduan'),
+                    ])
+                    ->fillForm(fn (Complaint $record): array => [
+                        'status' => $record->status,
+                    ])
+                    ->action(function (array $data, Complaint $record): void {
+                        $record->update([
+                            'status' => $data['status'],
+                        ]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Status berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    })
+                    ->modalSubmitActionLabel('Simpan Perubahan Status'),
             ]);
     }
 
@@ -101,7 +126,7 @@ class ComplaintResource extends Resource
         return [
             'index' => Pages\ListComplaints::route('/'),
             'create' => Pages\CreateComplaint::route('/create'),
-            'edit' => Pages\EditComplaint::route('/{record}/edit'),
+            // 'edit' => Pages\EditComplaint::route('/{record}/edit'),
             // 'view' => Pages\ViewComplaint::route('/{record}/view'),
         ];
     }
