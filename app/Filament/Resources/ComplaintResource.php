@@ -4,9 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ComplaintResource\Pages;
 use App\Models\Complaint;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Form;
 use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -20,19 +19,6 @@ class ComplaintResource extends Resource
     protected static ?string $model = Complaint::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
-    public static function form(Form $form): Form
-    {
-        return $form->schema([
-            Select::make('status')
-                ->options([
-                    'diajukan' => 'Diajukan',
-                    'diproses' => 'Diproses',
-                    'selesai' => 'Selesai',
-                ])
-                ->required(),
-        ]);
-    }
 
     public static function table(Table $table): Table
     {
@@ -54,7 +40,6 @@ class ComplaintResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(), // WAJIB untuk melihat hasil dekripsi
-                Tables\Actions\DeleteAction::make(),
             ]);
     }
 
@@ -68,7 +53,6 @@ class ComplaintResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-
             Section::make('Informasi Pengaduan')
                 ->schema([
                     TextEntry::make('title')->label('Judul'),
@@ -100,6 +84,15 @@ class ComplaintResource extends Resource
                             ->prose(),
                     ]),
                 ]),
+            Section::make('Percakapan')
+                ->schema([
+                    RepeatableEntry::make('messages')
+                        ->schema([
+                            TextEntry::make('sender_role')->badge(),
+                            TextEntry::make('message'),
+                            TextEntry::make('created_at')->since(),
+                        ]),
+                ]),
         ]);
     }
 
@@ -109,7 +102,7 @@ class ComplaintResource extends Resource
             'index' => Pages\ListComplaints::route('/'),
             'create' => Pages\CreateComplaint::route('/create'),
             'edit' => Pages\EditComplaint::route('/{record}/edit'),
-            'view' => Pages\ViewComplaint::route('/{record}/view'),
+            // 'view' => Pages\ViewComplaint::route('/{record}/view'),
         ];
     }
 }
