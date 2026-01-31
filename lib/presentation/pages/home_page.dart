@@ -30,10 +30,7 @@ class _HomePageState extends State<HomePage> {
           // 🔹 HEADER
           const Text(
             'Beranda',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const Text(
             'Berita terbaru hari ini',
@@ -50,11 +47,9 @@ class _HomePageState extends State<HomePage> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-if (snapshot.hasError) {
-  return Center(
-    child: Text(snapshot.error.toString()),
-  );
-}
+                if (snapshot.hasError) {
+                  return Center(child: Text(snapshot.error.toString()));
+                }
 
                 final posts = snapshot.data!;
 

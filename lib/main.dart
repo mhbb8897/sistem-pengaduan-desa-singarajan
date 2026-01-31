@@ -1,83 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:simpedesa/presentation/pages/profile_page.dart';
-import '../../presentation/pages/home_page.dart';
-import '../../presentation/pages/report_page.dart';
-import '../../presentation/pages/notification_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'presentation/pages/login_page.dart';
+import 'presentation/widgets/bottom_navigation.dart';
 
-
-void main() => runApp(BottomNavigationBarExampleApp());
-
-class BottomNavigationBarExampleApp extends StatelessWidget {
-  const BottomNavigationBarExampleApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(home: BottomNavigationBarExample());
-  }
+void main() {
+  runApp(const MyApp());
 }
 
-class BottomNavigationBarExample extends StatefulWidget {
-  const BottomNavigationBarExample({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  @override
-  State<BottomNavigationBarExample> createState() =>
-      _BottomNavigationBarExampleState();
-}
+  Future<bool> canEnterApp() async {
+    final prefs = await SharedPreferences.getInstance();
 
-class _BottomNavigationBarExampleState
-    extends State<BottomNavigationBarExample> {
-  int _selectedIndex = 0;
-  static const TextStyle optionStyle = TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.bold,
-    color: Colors.green,
-  );
+    final isLogin = prefs.getBool('isLogin') ?? false;
+    if (!isLogin) return false;
 
-  late final List<Widget> _widgetOptions;
+    final userJson = prefs.getString('user');
+    if (userJson == null) return false;
+    final user = jsonDecode(userJson);
+    if (user['role'] == 'admin') return false;
 
-  @override
-  void initState() {
-    super.initState();
-    _widgetOptions = [
-      const HomePage(),
-      const ReportPage(),
-      const NotificationPage(),
-      const ProfilePage(),
-    ];
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Aku Flutter')),
-      body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
-      bottomNavigationBar: BottomNavigationBar(
-        // Configuration bottom bar
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_rounded),
-            label: 'Pengaduan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notifikasi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle_outlined),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color.fromARGB(255, 8, 8, 8),
-        onTap: _onItemTapped,
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: FutureBuilder<bool>(
+        future: canEnterApp(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return snapshot.data!
+              ? const BottomNavigationBarExample()
+              : const LoginPage();
+        },
       ),
     );
   }
