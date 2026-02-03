@@ -12,4 +12,3 @@ Route::get('/ping', function () {
         'message' => 'API terhubung',
     ]);
 });
-// EncryptionController.php

@@ -5,7 +5,15 @@
         <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
                 <p class="text-gray-500">Judul</p>
-                <p class="font-medium text-white">{{ $record->title }}</p>
+                <p class="font-medium text-white">{{ $record->user->name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500">email</p>
+                <p class="font-medium text-white">{{ $record->user->email }}</p>
+            </div>
+            <div>
+                <p class="text-gray-500">Dilaporkan pada</p>
+                <p class="font-medium text-white">{{ $record->user->created_at }}</p>
             </div>
             <div>
                 <p class="text-gray-500">Kategori</p>
@@ -13,7 +21,8 @@
             </div>
             <div>
                 <p class="text-gray-500">Status</p>
-                <span class="px-2 py-1 text-xs text-yellow-500 bg-yellow-900 rounded-md uppercase">{{ $record->status }}</span>
+                <span
+                    class="px-2 py-1 text-xs text-yellow-500 bg-yellow-900 rounded-md uppercase">{{ $record->status }}</span>
             </div>
             <div>
                 <p class="text-gray-500">Created at</p>
@@ -49,6 +58,6 @@
         <h3 class="mb-2 text-xs font-bold text-gray-400 uppercase">Percakapan</h3>
         @livewire('chat-complaint', ['recordId' => $record->id])
     </div>
-    
+
     <hr class="border-gray-800">
 </div>
