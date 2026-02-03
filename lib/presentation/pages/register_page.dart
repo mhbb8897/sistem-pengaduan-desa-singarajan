@@ -1,49 +1,54 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simpedesa/presentation/widgets/bottom_navigation.dart';
-import 'package:simpedesa/presentation/pages/register_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+
   bool isLoading = false;
 
-  Future<void> login() async {
+  Future<void> register() async {
+    if (passwordController.text != confirmPasswordController.text) {
+      showError('Password dan konfirmasi tidak sama');
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
       final response = await http.post(
-        Uri.parse('http://172.16.0.136:8000/api/loginuser'),
+        Uri.parse('http://172.16.0.136:8000/api/registeruser'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': emailController.text,
           'password': passwordController.text,
+          'password_confirmation': confirmPasswordController.text,
         }),
       );
 
       setState(() => isLoading = false);
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLogin', true);
-        await prefs.setString('user', jsonEncode(data['user']));
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => BottomNavigationBarExampleApp()),
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi berhasil, silakan login'),
+            backgroundColor: Colors.green,
+          ),
         );
+
+        Navigator.pop(context); // balik ke login
       } else {
-        showError(data['message'] ?? 'Login gagal');
+        showError(data['message'] ?? 'Registrasi gagal');
       }
     } catch (e) {
       setState(() => isLoading = false);
@@ -61,12 +66,17 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
+
           child: Column(
             children: [
-              // Logo
               Image.asset(
                 'assets/image/logo-simpedesa.png',
                 height: 150,
@@ -93,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Login to your Account',
+                      'Create your Account',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -114,6 +124,14 @@ class _LoginPageState extends State<LoginPage> {
                       obscureText: true,
                       decoration: inputDecoration('Password'),
                     ),
+                    const SizedBox(height: 14),
+
+                    // CONFIRM PASSWORD
+                    TextField(
+                      controller: confirmPasswordController,
+                      obscureText: true,
+                      decoration: inputDecoration('Confirm Password'),
+                    ),
                     const SizedBox(height: 24),
 
                     // BUTTON
@@ -121,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: isLoading ? null : login,
+                        onPressed: isLoading ? null : register,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFF243E8F),
                           shape: RoundedRectangleBorder(
@@ -133,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                                 color: Colors.white,
                               )
                             : const Text(
-                                'Sign in',
+                                'Sign up',
                                 style: TextStyle(fontSize: 16),
                               ),
                       ),
@@ -141,35 +159,20 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 20),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterPage(),
-                              ),
-                            );
-                          },
-                          child: const Text("Don't have an account? Sign up"),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
                     // DIVIDER
                     Row(
                       children: const [
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('or sign in with'),
+                          child: Text('or sign up with'),
                         ),
                         Expanded(child: Divider()),
                       ],
                     ),
-                    // SOCIAL LOGIN
+                    const SizedBox(height: 16),
+
+                    // SOCIAL
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -177,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(width: 12),
                         socialButton(Icons.facebook),
                         const SizedBox(width: 12),
-                        socialButton(Icons.travel_explore), // Twitter-like
+                        socialButton(Icons.travel_explore),
                       ],
                     ),
                   ],
