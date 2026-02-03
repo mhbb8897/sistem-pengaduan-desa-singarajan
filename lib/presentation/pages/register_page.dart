@@ -26,7 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://172.16.0.136:8000/api/registeruser'),
+        Uri.parse('http://127.0.0.1:8000/api/registeruser'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': emailController.text,
@@ -134,24 +134,29 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // BUTTON
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: isLoading ? null : register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF243E8F),
+                          backgroundColor: const Color(0xFF243E8F),
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text(
-                                'Sign up',
+                                'Sign Up',
                                 style: TextStyle(fontSize: 16),
                               ),
                       ),

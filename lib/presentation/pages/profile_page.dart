@@ -5,11 +5,54 @@ import 'package:simpedesa/presentation/pages/login_page.dart';
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
   Future<void> logout(BuildContext context) async {
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Keluar dari akun?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text('Kamu harus login kembali untuk masuk.'),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Batal'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Keluar'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true) return;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
-    Navigator.pushAndRemoveUntil(
-      context,
+    Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginPage()),
       (route) => false,
     );

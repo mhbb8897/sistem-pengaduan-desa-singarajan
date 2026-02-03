@@ -1,64 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:simpedesa/presentation/pages/post_detail_page.dart';
 import '../../data/models/post_model.dart';
+import '../pages/post_detail_page.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
 
-  const PostCard({required this.post});
+  const PostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => PostDetailPage(post: post)),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 TITLE
-            Text(
-              post.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            // 🔹 IMAGE
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
               ),
-            ),
-            const SizedBox(height: 8),
-
-            // 🔹 BODY
-            Text(
-              post.body,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.black87),
-            ),
-
-            const SizedBox(height: 12),
-
-            // 🔹 ACTION
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'Lihat Detail',
-                style: TextStyle(
-                  color: Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.w600,
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  post.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.image, size: 40),
+                  ),
                 ),
               ),
-            )
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 🔹 CATEGORY
+                  Text(
+                    post.category.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  // 🔹 TITLE
+                  Text(
+                    post.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 🔹 BODY
+                  Text(
+                    post.body,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

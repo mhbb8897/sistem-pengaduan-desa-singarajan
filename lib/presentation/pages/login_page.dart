@@ -22,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://172.16.0.136:8000/api/loginuser'),
+        Uri.parse('http://127.0.0.1:8000/api/loginuser'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': emailController.text,
@@ -121,16 +121,22 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: isLoading ? null : login,
+                        onPressed: isLoading ? () {} : login, // ⬅ JANGAN null
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF243E8F),
+                          backgroundColor: const Color(0xFF243E8F),
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text(
                                 'Sign in',
