@@ -53,7 +53,7 @@
         </div>
     </div>
 
-    {{-- Section Percakapan (Livewire) --}}
+    {{-- Section chat (Livewire) --}}
     <div>
         <h3 class="mb-2 text-xs font-bold text-gray-400 uppercase">Percakapan</h3>
         @livewire('chat-complaint', ['recordId' => $record->id])

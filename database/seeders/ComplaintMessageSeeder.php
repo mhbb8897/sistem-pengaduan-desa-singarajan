@@ -13,7 +13,7 @@ class ComplaintMessageSeeder extends Seeder
     {
         $complaint = Complaint::first();
         $user = User::first();
-        $admin = User::skip(1)->first() ?? $user;
+        $admin = User::skip(value: 1)->first() ?? $user;
 
         if (! $complaint) {
             return;
