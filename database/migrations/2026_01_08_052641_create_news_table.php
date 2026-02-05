@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('content');
-            $table->string('image')->notnull(); // path gambar
+            $table->string('image'); // path gambar
             $table->timestamps();
         });
     }
