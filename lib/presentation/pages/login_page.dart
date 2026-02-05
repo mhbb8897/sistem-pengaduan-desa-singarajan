@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simpedesa/presentation/widgets/bottom_navigation.dart';
 import 'package:simpedesa/presentation/pages/register_page.dart';
+import 'package:local_captcha/local_captcha.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,9 +16,25 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final _captchaController = LocalCaptchaController();
+  final TextEditingController _captchaInputController = TextEditingController();
+
   bool isLoading = false;
 
   Future<void> login() async {
+    // final isValidCaptcha = _captchaController.validate(
+    //   _captchaInputController.text,
+    // );
+
+    // if (!isValidCaptcha) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     const SnackBar(
+    //       content: Text('Captcha salah'),
+    //       backgroundColor: Colors.red,
+    //     ),
+    //   );
+    //   return;
+    // }
     setState(() => isLoading = true);
 
     try {
@@ -116,6 +133,28 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 24),
 
+                    // // 🔐 CAPTCHA
+                    // LocalCaptcha(
+                    //   controller: _captchaController,
+                    //   inputController: _captchaInputController,
+                    //   height: 150,
+                    //   width: 300,
+                    //   backgroundColor: Colors.grey[200]!,
+                    //   textColor: Colors.black,
+                    // ),
+
+                    // Align(
+                    //   alignment: Alignment.centerRight,
+                    //   child: TextButton.icon(
+                    //     onPressed: () {
+                    //       _captchaController.refresh();
+                    //       _captchaInputController.clear();
+                    //     },
+                    //     icon: const Icon(Icons.refresh),
+                    //     label: const Text('Refresh captcha'),
+                    //   ),
+                    // ),
+                    const SizedBox(height: 16),
                     // BUTTON
                     SizedBox(
                       width: double.infinity,
@@ -129,6 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
+
                         child: isLoading
                             ? const SizedBox(
                                 width: 22,
@@ -164,6 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
+
                     // DIVIDER
                     Row(
                       children: const [

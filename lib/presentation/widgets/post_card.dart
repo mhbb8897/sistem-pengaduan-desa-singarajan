@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:simpedesa/presentation/pages/post_detail_page.dart';
 import '../../data/models/post_model.dart';
 import '../pages/post_detail_page.dart';
 
@@ -45,7 +44,7 @@ class PostCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: Colors.grey[300],
-                    child: const Icon(Icons.image, size: 40),
+                    child: const Icon(Icons.broken_image, size: 40),
                   ),
                 ),
               ),
@@ -56,18 +55,6 @@ class PostCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🔹 CATEGORY
-                  Text(
-                    post.category.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
                   // 🔹 TITLE
                   Text(
                     post.title,
@@ -81,12 +68,16 @@ class PostCard extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
-                  // 🔹 BODY
+                  // 🔹 CONTENT (preview)
                   Text(
-                    post.body,
+                    post.content,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),

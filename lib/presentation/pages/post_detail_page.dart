@@ -10,8 +10,8 @@ class PostDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(post.category),
         backgroundColor: const Color(0xFF243E8F),
+        title: Text(post.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -26,7 +26,7 @@ class PostDetailPage extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: Colors.grey[300],
-                  child: const Icon(Icons.image, size: 60),
+                  child: const Icon(Icons.broken_image, size: 60),
                 ),
               ),
             ),
@@ -40,19 +40,8 @@ class PostDetailPage extends StatelessWidget {
                   Text(
                     post.title,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // 🔹 CATEGORY
-                  Text(
-                    post.category,
-                    style: const TextStyle(
-                      color: Colors.blueGrey,
-                      fontSize: 12,
                     ),
                   ),
 
@@ -60,8 +49,10 @@ class PostDetailPage extends StatelessWidget {
 
                   // 🔹 CONTENT
                   Text(
-                    post.content.isNotEmpty ? post.content : post.body,
-                    style: const TextStyle(fontSize: 14, height: 1.6),
+                    post.content.isNotEmpty
+                        ? post.content
+                        : 'Konten belum tersedia.',
+                    style: const TextStyle(fontSize: 15, height: 1.7),
                   ),
                 ],
               ),

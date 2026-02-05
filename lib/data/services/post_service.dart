@@ -3,20 +3,18 @@ import 'package:http/http.dart' as http;
 import '../models/post_model.dart';
 
 class PostService {
+  static const String baseUrl = 'http://127.0.0.1:8000/api/news';
+
   Future<List<PostModel>> fetchPosts() async {
-    final response = await http.get(
-      Uri.parse('https://jsonplaceholder.typicode.com/posts?_limit=4'),
-      headers: {
-      'User-Agent': 'Mozilla/5.0',
-      'Accept': 'application/json',
-    },
-    );
+    final response = await http.get(Uri.parse(baseUrl));
 
     if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
+      final body = json.decode(response.body);
+      final List data = body['data'];
+
       return data.map((e) => PostModel.fromJson(e)).toList();
     } else {
-      throw Exception('Gagal mengambil data');
+      throw Exception('Gagal mengambil data berita');
     }
   }
 }
