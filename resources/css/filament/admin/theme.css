@@ -3,25 +3,22 @@
 @config 'tailwind.config.js';
 
 /* INPUT & TEXTAREA */
-.fi-input,
+/* .fi-input,
 .fi-textarea,
 .fi-select-input {
     color: #ffffff !important;
     background-color: #1f2937 !important;
-    /* dark gray */
     border-color: #374151 !important;
 }
 
-/* PLACEHOLDER */
 .fi-input::placeholder,
 .fi-textarea::placeholder {
     color: #9ca3af !important;
 }
 
-/* READONLY / DISABLED (di ViewRecord sering kena ini) */
 .fi-input[disabled],
 .fi-textarea[disabled] {
     color: #ffffff !important;
     background-color: #111827 !important;
     opacity: 1 !important;
-}
+} */

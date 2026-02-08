@@ -41,7 +41,7 @@ class UserResource extends Resource
                 TextColumn::make('roles.name')->label('Role')->badge()->separator(','),
                 TextColumn::make('created_at')->dateTime()])
 
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make(),])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 

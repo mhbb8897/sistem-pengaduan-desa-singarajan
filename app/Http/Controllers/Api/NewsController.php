@@ -14,105 +14,116 @@ class NewsController extends Controller
     {
         return response()->json([
             'status' => true,
-            'data' => News::latest()->get()
-        ]);
+            'data' => News::latest()->get()->map(function ($news) {
+                return [
+                    'id' => $news->id,
+                    'title' => $news->title,
+                    'content' => $news->content,
+                    'image_url' => asset(
+                        'storage/' . str_replace('\\', '/', $news->image)
+                    ),
+                    'created_at' => $news->created_at,
+                ];
+            })
+        ],200);
     }
 
-    // 📌 GET /api/news/{id}
-    public function show($id)
-    {
-        $news = News::find($id);
 
-        if (!$news) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Berita tidak ditemukan'
-            ], 404);
-        }
+    // // 📌 GET /api/news/{id}
+    // public function show($id)
+    // {
+    //     $news = News::find($id);
 
-        return response()->json([
-            'status' => true,
-            'data' => $news
-        ]);
-    }
+    //     if (!$news) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Berita tidak ditemukan'
+    //         ], 404);
+    //     }
 
-    // 📌 POST /api/news
-    public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+    //     return response()->json([
+    //         'status' => true,
+    //         'data' => $news
+    //     ]);
+    // }
 
-        $imagePath = $request->file('image')->store('news', 'public');
+    // // 📌 POST /api/news
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'title' => 'required|string|max:255',
+    //         'content' => 'required',
+    //         'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+    //     ]);
 
-        $news = News::create([
-            'title'   => $request->input('title'),
-            'content' => $request->input('content'),
-            'image' => $imagePath,
-        ]);
+    //     $imagePath = $request->file('image')->store('news', 'public');
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Berita berhasil ditambahkan',
-            'data' => $news
-        ], 201);
-    }
+    //     $news = News::create([
+    //         'title'   => $request->input('title'),
+    //         'content' => $request->input('content'),
+    //         'image' => $imagePath,
+    //     ]);
 
-    // 📌 PUT /api/news/{id}
-    public function update(Request $request, $id)
-    {
-        $news = News::find($id);
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Berita berhasil ditambahkan',
+    //         'data' => $news
+    //     ], 201);
+    // }
 
-        if (!$news) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Berita tidak ditemukan'
-            ], 404);
-        }
+    // // 📌 PUT /api/news/{id}
+    // public function update(Request $request, $id)
+    // {
+    //     $news = News::find($id);
 
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+    //     if (!$news) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Berita tidak ditemukan'
+    //         ], 404);
+    //     }
 
-        if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($news->image);
-            $news->image = $request->file('image')->store('news', 'public');
-        }
+    //     $request->validate([
+    //         'title' => 'required|string|max:255',
+    //         'content' => 'required',
+    //         'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+    //     ]);
 
-        $news->update([
-            'title'   => $request->input('title'),
-            'content' => $request->input('content'),
-        ]);
+    //     if ($request->hasFile('image')) {
+    //         Storage::disk('public')->delete($news->image);
+    //         $news->image = $request->file('image')->store('news', 'public');
+    //     }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Berita berhasil diperbarui',
-            'data' => $news
-        ]);
-    }
+    //     $news->update([
+    //         'title'   => $request->input('title'),
+    //         'content' => $request->input('content'),
+    //     ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Berita berhasil diperbarui',
+    //         'data' => $news
+    //     ]);
+    // }
 
     // 📌 DELETE /api/news/{id}
-    public function destroy($id)
-    {
-        $news = News::find($id);
+    // public function destroy($id)
+    // {
+    //     $news = News::find($id);
 
-        if (!$news) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Berita tidak ditemukan'
-            ], 404);
-        }
+    //     if (!$news) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Berita tidak ditemukan'
+    //         ], 404);
+    //     }
 
-        Storage::disk('public')->delete($news->image);
-        $news->delete();
+    //     Storage::disk('public')->delete($news->image);
+    //     $news->delete();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Berita berhasil dihapus'
-        ]);
-    }
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Berita berhasil dihapus'
+    //     ]);
+    // }
 }

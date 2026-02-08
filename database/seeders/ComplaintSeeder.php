@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Complaint;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use phpseclib3\Crypt\AES;
 use phpseclib3\Crypt\RSA;
 
@@ -12,61 +12,41 @@ class ComplaintSeeder extends Seeder
 {
     public function run(): void
     {
-        // Mengambil random user
-        $user = User::role('user')->inRandomOrder()->first();
-        // Mengambil user pertama
-        // $user = User::role('user')->first();
+        // 1. Mengambil 5 user random
+        $users = User::role('user')->inRandomOrder()->limit(5)->get();
 
-        if (! $user) {
-            $this->command->error('Tidak ada user dengan role USER.');
+        if ($users->count() < 5) {
+            $this->command->error('User dengan role USER kurang dari 5. Pastikan UserSeeder sudah dijalankan.');
 
             return;
         }
 
-        // 2️⃣ Ambil RSA Public Key (digunakan untuk enkripsi AES key)
+        // 2. Load RSA Public Key
         $publicKeyPath = storage_path('app/public.pem');
         if (! file_exists($publicKeyPath)) {
-            $this->command->error('Public key tidak ditemukan. Generate key terlebih dahulu.');
+            $this->command->error('Public key tidak ditemukan.');
 
             return;
         }
 
         $publicKey = RSA::load(file_get_contents($publicKeyPath));
 
-        // 3️⃣ Data simulasi pengaduan (plaintext)
+        // 3. Data simulasi
         $sampleComplaints = [
-            [
-                'title' => 'Kerusakan Jalan Desa',
-                'category' => 'Fasilitas',
-                'content' => [
-                    'lokasi' => 'Jl. Mawar RT 01',
-                    'deskripsi' => 'Jalan berlubang parah menyebabkan kecelakaan.',
-                    'waktu_kejadian' => '2023-10-27 08:00',
-                ],
-            ],
-            [
-                'title' => 'Dugaan Pelanggaran Prosedur',
-                'category' => 'Pelanggaran HAM',
-                'content' => [
-                    'kronologi' => 'Terjadi penangkapan tanpa surat tugas.',
-                    'pelaku' => 'Oknum perangkat desa',
-                    'lokasi' => 'Balai Desa',
-                    'pihak_terlibat' => 'Warga sekitar',
-                ],
-            ],
+            ['title' => 'Kerusakan Jalan Umum', 'category' => 'Fasilitas Umum', 'content' => ['lokasi' => 'Jl. Mawar RT 01', 'deskripsi' => 'Jalan berlubang.', 'waktu_kejadian' => '2023-10-27']],
+            ['title' => 'Pelayanan Tidak Profesional', 'category' => 'Kinerja Perangkat Desa', 'content' => ['perangkat' => 'Staff Admin', 'deskripsi' => 'Petugas tidak ada.', 'tanggal' => '2023-10-25']],
+            ['title' => 'Pengurusan Surat Terlambat', 'category' => 'Layanan Publik', 'content' => ['jenis_layanan' => 'Surat Domisili', 'deskripsi' => 'Lebih dari 2 minggu.', 'pengajuan' => '2023-10-10']],
+            ['title' => 'Dugaan Pelanggaran HAM', 'category' => 'Pelanggaran HAM', 'content' => ['kronologi' => 'Penangkapan tanpa surat.', 'pelaku' => 'Oknum', 'lokasi' => 'Balai Desa']],
+            ['title' => 'Gangguan Ketertiban Warga', 'category' => 'Keluhan Sosial', 'content' => ['deskripsi' => 'Keributan malam.', 'lokasi' => 'RT 04 RW 02', 'waktu' => '22:00']],
         ];
 
-        foreach ($sampleComplaints as $data) {
+        // 4. Loop SATU KALI saja
+        foreach ($sampleComplaints as $index => $data) {
 
-            // ==============================
-            // 🔐 PROSES ENKRIPSI HIBRIDA
-            // ==============================
-
-            // A️⃣ Generate AES Session Key & IV
+            // Logika Enkripsi
             $aesKey = random_bytes(32); // AES-256
-            $iv = random_bytes(16); // IV untuk AES-CBC
+            $iv = random_bytes(16);
 
-            // B️⃣ Enkripsi konten pengaduan menggunakan AES
             $aes = new AES('cbc');
             $aes->setKey($aesKey);
             $aes->setIV($iv);
@@ -74,25 +54,23 @@ class ComplaintSeeder extends Seeder
             $plaintext = json_encode($data['content']);
             $ciphertext = $aes->encrypt($plaintext);
 
-            // C️⃣ Enkripsi AES key menggunakan RSA Public Key
+            // Enkripsi AES Key dengan RSA
             $encryptedAesKey = $publicKey->encrypt($aesKey);
 
-            // ==============================
-            // 💾 SIMPAN KE DATABASE
-            // ==============================
-            Complaint::create([
-                'user_id' => $user->id,
+            // Simpan ke Database
+            DB::table('complaints')->insert([
+                'user_id' => $users[$index]->id, // Menggunakan index untuk mapping ke user
                 'title' => $data['title'],
                 'category' => $data['category'],
                 'status' => 'diajukan',
-
-                // Data terenkripsi
                 'encrypted_content' => base64_encode($ciphertext),
                 'encrypted_aes_key' => base64_encode($encryptedAesKey),
                 'iv' => base64_encode($iv),
-
-                'attachment_path' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
+
+        $this->command->info('Berhasil membuat 5 data pengaduan terenkripsi.');
     }
 }

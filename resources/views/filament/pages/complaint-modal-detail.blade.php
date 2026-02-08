@@ -4,7 +4,7 @@
         <h3 class="mb-4 text-xs font-bold text-gray-400 uppercase">Informasi Pengaduan</h3>
         <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
-                <p class="text-gray-500">Judul</p>
+                <p class="text-gray-500">Pelapor</p>
                 <p class="font-medium text-white">{{ $record->user->name }}</p>
             </div>
             <div>
