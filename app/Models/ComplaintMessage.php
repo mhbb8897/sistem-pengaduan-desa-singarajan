@@ -9,7 +9,6 @@ class ComplaintMessage extends Model
     protected $fillable = [
         'complaint_id',
         'user_id',
-        'sender_role',
         'message',
     ];
 
@@ -21,5 +20,11 @@ class ComplaintMessage extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function isAdminSender(): bool
+    {
+        // Mengembalikan true jika role-nya adalah super_admin
+        return $this->user->hasRole('super_admin');
     }
 }

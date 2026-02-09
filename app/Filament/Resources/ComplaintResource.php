@@ -85,7 +85,7 @@ class ComplaintResource extends Resource
                     TextEntry::make('status')->badge(),
                     TextEntry::make('created_at')->dateTime(),
                 ])
-                ->columns(2),
+                ->columns(3),
 
             Section::make('Data Terdekripsi (AES + RSA)')
                 ->description('Data ini hanya dapat dibaca oleh admin melalui private key.')

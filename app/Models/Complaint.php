@@ -19,7 +19,6 @@ class Complaint extends Model
         'encrypted_content',
         'encrypted_aes_key',
         'iv',
-        'attachment_path',
     ];
 
     /**

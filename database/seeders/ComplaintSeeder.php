@@ -33,13 +33,61 @@ class ComplaintSeeder extends Seeder
 
         // 3. Data simulasi
         $sampleComplaints = [
-            ['title' => 'Kerusakan Jalan Umum', 'category' => 'Fasilitas Umum', 'content' => ['lokasi' => 'Jl. Mawar RT 01', 'deskripsi' => 'Jalan berlubang.', 'waktu_kejadian' => '2023-10-27']],
-            ['title' => 'Pelayanan Tidak Profesional', 'category' => 'Kinerja Perangkat Desa', 'content' => ['perangkat' => 'Staff Admin', 'deskripsi' => 'Petugas tidak ada.', 'tanggal' => '2023-10-25']],
-            ['title' => 'Pengurusan Surat Terlambat', 'category' => 'Layanan Publik', 'content' => ['jenis_layanan' => 'Surat Domisili', 'deskripsi' => 'Lebih dari 2 minggu.', 'pengajuan' => '2023-10-10']],
-            ['title' => 'Dugaan Pelanggaran HAM', 'category' => 'Pelanggaran HAM', 'content' => ['kronologi' => 'Penangkapan tanpa surat.', 'pelaku' => 'Oknum', 'lokasi' => 'Balai Desa']],
-            ['title' => 'Gangguan Ketertiban Warga', 'category' => 'Keluhan Sosial', 'content' => ['deskripsi' => 'Keributan malam.', 'lokasi' => 'RT 04 RW 02', 'waktu' => '22:00']],
-        ];
-
+            [
+                'title' => 'Kerusakan Jalan Mawar',
+                'category' => 'Fasilitas Umum',
+                'content' => [
+                    'lokasi' => 'Jl. Mawar RT 01',
+                    'deskripsi' => 'Jalan berlubang parah menghambat akses warga.',
+                    'waktu_kejadian_diketahui' => '2023-10-27 08:00',
+                    'bukti_pendukung' => 'foto_jalan_rusak.jpg',
+                ],
+            ],
+            [
+                'title' => 'Staf Administrasi Tidak Ramah',
+                'category' => 'Kinerja Perangkat Desa',
+                'content' => [
+                    'nama_perangkat_desa' => 'Andi (Staf Admin)',
+                    'deskripsi' => 'Pelayanan sangat lambat dan petugas meninggalkan meja saat jam kerja.',
+                    'lokasi' => 'Loket Pendaftaran',
+                    'tanggal_dan_waktu_kejadian' => '2023-10-25 10:30',
+                    'bukti_pendukung' => 'rekaman_suara.mp3',
+                ],
+            ],
+            [
+                'title' => 'Keterlambatan KTP',
+                'category' => 'Layanan Publik',
+                'content' => [
+                    'nama_layanan_unit' => 'Disdukcapil / Layanan KTP',
+                    'deskripsi' => 'Sudah 3 bulan KTP tidak kunjung selesai tanpa kejelasan.',
+                    'lokasi' => 'Kecamatan ABC',
+                    'tanggal_dan_waktu_kejadian' => '2023-10-10',
+                    'bukti_pendukung' => 'resi_pengambilan.pdf',
+                ],
+            ],
+            [
+                'title' => 'Dugaan Intimidasi Aparat',
+                'category' => 'Pelanggaran HAM',
+                'content' => [
+                    'jenis_pelanggaran' => 'Intimidasi/Kekerasan Fisik',
+                    'pelaku' => 'Oknum Keamanan',
+                    'kronologi' => 'Terjadi pembubaran paksa rapat warga tanpa prosedur resmi.',
+                    'lokasi' => 'Balai Pertemuan RT 05',
+                    'tanggal_dan_waktu_kejadian' => '2023-11-01 20:00',
+                    'pihak_yang_terlibat' => 'Warga RT 05 dan Oknum X',
+                    'bukti_pendukung' => 'video_kejadian.mp4',
+                ],
+            ],
+            [
+                'title' => 'Gangguan Suara Musik Malam Hari',
+                'category' => 'Keluhan Sosial',
+                'content' => [
+                    'deskripsi' => 'Tetangga menyalakan musik dengan volume tinggi hingga dini hari.',
+                    'lokasi' => 'Blok B Nomor 12',
+                    'tanggal_dan_waktu_kejadian' => 'Setiap Malam Jumat',
+                    'bukti_pendukung' => 'video_noise.mp4',
+                ],
+            ], ];
         // 4. Loop SATU KALI saja
         foreach ($sampleComplaints as $index => $data) {
 

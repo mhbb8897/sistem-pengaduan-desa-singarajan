@@ -2,9 +2,10 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Complaint;
 use App\Models\ComplaintMessage;
+use Livewire\Component;
+
 class ChatComplaint extends Component
 {
     public $recordId;
@@ -12,7 +13,6 @@ class ChatComplaint extends Component
     public $message = '';
 
     // Gunakan Polling agar pesan baru dari sisi lain muncul otomatis
-    // wire:poll.5s akan refresh komponen setiap 5 detik
     public function render()
     {
         $aduan = Complaint::with('messages')->find($this->recordId);
@@ -30,14 +30,8 @@ class ChatComplaint extends Component
             'complaint_id' => $this->recordId,
             'user_id' => auth()->id(),
             'message' => $this->message,
-            'sender_role' => auth()->user()->hasRole('super_admin'),
         ]);
 
         $this->message = ''; // Reset input
     }
-
-    // public function render()
-    // {
-    //     return view('livewire.chat-complaint');
-    // }
 }
