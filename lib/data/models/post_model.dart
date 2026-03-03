@@ -14,9 +14,9 @@ class PostModel {
   factory PostModel.fromJson(Map<String, dynamic> json) {
     return PostModel(
       id: json['id'],
-      title: json['title'],
-      content: json['content'],
-      imageUrl: json['image_url'],
+      title: json['title'] ?? '',
+      content: json['content'] ?? json['content'] ?? '',
+      imageUrl: json['image_url'] ?? '',
     );
   }
 }

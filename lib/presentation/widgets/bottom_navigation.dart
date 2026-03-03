@@ -34,7 +34,7 @@ class _BottomNavigationBarExampleState
   static const TextStyle optionStyle = TextStyle(
     fontSize: 30,
     fontWeight: FontWeight.bold,
-    color: Colors.green,
+    color: Colors.black,
   );
 
   late final List<Widget> _widgetOptions;

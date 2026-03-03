@@ -133,28 +133,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // // 🔐 CAPTCHA
-                    // LocalCaptcha(
-                    //   controller: _captchaController,
-                    //   inputController: _captchaInputController,
-                    //   height: 150,
-                    //   width: 300,
-                    //   backgroundColor: Colors.grey[200]!,
-                    //   textColor: Colors.black,
-                    // ),
-
-                    // Align(
-                    //   alignment: Alignment.centerRight,
-                    //   child: TextButton.icon(
-                    //     onPressed: () {
-                    //       _captchaController.refresh();
-                    //       _captchaInputController.clear();
-                    //     },
-                    //     icon: const Icon(Icons.refresh),
-                    //     label: const Text('Refresh captcha'),
-                    //   ),
-                    // ),
-                    const SizedBox(height: 16),
                     // BUTTON
                     SizedBox(
                       width: double.infinity,

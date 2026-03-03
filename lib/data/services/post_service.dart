@@ -7,7 +7,7 @@ class PostService {
 
   Future<List<PostModel>> fetchPosts() async {
     final response = await http.get(Uri.parse(baseUrl));
-
+    print(response.body);
     if (response.statusCode == 200) {
       final body = json.decode(response.body);
       final List data = body['data'];
