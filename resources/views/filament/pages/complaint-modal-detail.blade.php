@@ -1,90 +1,87 @@
-<div class="space-y-6 text-gray-200">
-    {{-- Section Informasi Pengaduan (Identitas Pelapor) --}}
-    <div class="p-4 bg-gray-900 border border-gray-800 rounded-xl">
-        <h3 class="mb-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Informasi Pengaduan</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-                <p class="text-gray-500">Pelapor</p>
-                <p class="font-medium text-white">{{ $record->user->name }}</p>
-            </div>
-            <div>
-                <p class="text-gray-500">Kategori</p>
-                <span class="px-2 py-0.5 text-xs font-semibold bg-blue-900 text-blue-300 rounded-full">
-                    {{ $record->category }}
-                </span>
-            </div>
-            <div>
-                <p class="text-gray-500">Status</p>
-                <span
-                    class="px-2 py-1 text-xs text-yellow-500 bg-yellow-900/50 border border-yellow-700 rounded-md uppercase">
-                    {{ $record->status }}
-                </span>
-            </div>
-            <div>
-                <p class="text-gray-500">Waktu Laporan</p>
-                <p class="font-medium text-white">{{ $record->created_at->format('d M Y, H:i') }}</p>
-            </div>
-        </div>
-    </div>
+<div class="space-y-6">
+    {{-- Section Informasi Pengaduan --}}
+    <x-filament::section>
+        <x-slot name="heading">
+            {{ __('Informasi Pengaduan') }}
+        </x-slot>
 
-    {{-- Section Data Terdekripsi --}}
-    <div class="p-4 bg-gray-900 border border-gray-800 rounded-xl">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Detail Laporan: {{ $record->title }}
-            </h3>
-            <span class="text-[10px] text-green-500 flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
-                    </path>
-                </svg>
-                Decrypted (AES-256)
-            </span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+        <div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+            {{-- Info Item Reusable --}}
             @php
-                $mainTextKeys = ['deskripsi', 'kronologi', 'keterangan_lainnya'];
-                $content = $record->decrypted_content ?? [];
-                // Kunci yang tidak ingin ditampilkan di loop atas (karena punya tempat khusus)
-                $excludedKeys = array_merge($mainTextKeys, ['bukti_pendukung']); 
+                $infoItems = [
+                    ['label' => 'Pelapor', 'value' => $record->user->name, 'type' => 'text'],
+                    ['label' => 'Kategori', 'value' => $record->category, 'type' => 'badge', 'color' => 'gray'],
+                    ['label' => 'Status', 'value' => $record->status, 'type' => 'badge', 'color' => 'warning'],
+                    ['label' => 'Waktu Laporan', 'value' => $record->created_at->format('d M Y, H:i'), 'type' => 'text'],
+                ];
             @endphp
 
-            {{-- 1. Generate Otomatis Field (Kecuali Deskripsi & Bukti) --}}
+            @foreach($infoItems as $item)
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $item['label'] }}</p>
+                    @if($item['type'] === 'badge')
+                        <x-filament::badge :color="$item['color']" class="w-fit">
+                            {{ $item['value'] }}
+                        </x-filament::badge>
+                    @else
+                        <p class="font-medium text-gray-950 dark:text-white">{{ $item['value'] }}</p>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </x-filament::section>
+
+    {{-- Section Data Terdekripsi --}}
+    <div class="p-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-sm">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100 dark:border-white/5">
+            <h3 class="text-sm font-bold text-gray-950 dark:text-white uppercase tracking-wider">
+                Detail Laporan: {{ $record->title }}
+            </h3>
+            <x-filament::badge color="success" icon="heroicon-m-lock-open" size="sm">
+                Decrypted (AES-256)
+            </x-filament::badge>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            @php
+                $content = $record->decrypted_content ?? [];
+                $mainTextKeys = ['deskripsi', 'kronologi', 'keterangan_lainnya'];
+                $excludedKeys = array_merge($mainTextKeys, ['bukti_pendukung']);
+            @endphp
+
+            {{-- Metadata Fields --}}
             @foreach($content as $key => $value)
                 @if(!in_array($key, $excludedKeys))
-                    <div>
-                        <p class="text-gray-500 capitalize">{{ str_replace('_', ' ', $key) }}</p>
-                        <p class="text-white font-medium">{{ $value ?? '-' }}</p>
+                    <div class="space-y-1">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">{{ str_replace('_', ' ', $key) }}</p>
+                        <p class="text-gray-950 dark:text-gray-200">{{ $value ?? '-' }}</p>
                     </div>
                 @endif
             @endforeach
 
-            {{-- 2. Tampilan Bukti Pendukung (Mengambil file fake-news.png) --}}
+            {{-- Bukti Pendukung --}}
             @if(isset($content['bukti_pendukung']))
-                <div class="col-span-full mt-2">
-                    <p class="text-gray-500 capitalize mb-2">📁 Bukti Pendukung</p>
-                    <div class="p-2 bg-gray-800/30 border border-gray-700 rounded-lg inline-block">
-                        {{-- Sesuai struktur folder Anda: storage/app/public/news/fake-news.png --}}
-                        <a href="{{ asset('storage/news/fake-news.png') }}" target="_blank" class="group relative block">
+                <div class="col-span-full pt-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase mb-3">📁 Bukti Pendukung</p>
+                    <div
+                        class="inline-block p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg">
+                        <a href="{{ asset('storage/news/fake-news.png') }}" target="_blank"
+                            class="block overflow-hidden rounded-md group">
                             <img src="{{ asset('storage/news/fake-news.png') }}"
-                                class="max-w-xs rounded border border-gray-600 shadow-md group-hover:opacity-75 transition-all"
-                                alt="Bukti Pengaduan">
-                            <div
-                                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span class="bg-black/50 text-white px-2 py-1 rounded text-xs">Klik untuk memperbesar</span>
-                            </div>
+                                class="max-w-xs transition duration-300 group-hover:scale-105" alt="Bukti">
                         </a>
                     </div>
                 </div>
             @endif
 
-            {{-- 3. Description --}}
+            {{-- Long Text Fields --}}
             @foreach($mainTextKeys as $textKey)
                 @if(isset($content[$textKey]))
-                    <div class="col-span-full mt-2">
-                        <p class="text-gray-500 capitalize">📝 {{ str_replace('_', ' ', $textKey) }}</p>
-                        <div class="p-3 mt-1 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-200 leading-relaxed">
+                    <div class="col-span-full pt-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">📝 {{ str_replace('_', ' ', $textKey) }}
+                        </p>
+                        <div
+                            class="p-4 rounded-lg bg-gray-50 dark:bg-white/5 text-gray-800 dark:text-gray-300 ring-1 ring-gray-200 dark:ring-white/10">
                             {{ $content[$textKey] }}
                         </div>
                     </div>
@@ -92,10 +89,14 @@
             @endforeach
         </div>
     </div>
-    {{-- Section Livewire Chat and Send Message--}}
 
-    <div>
-        <h3 class="mb-2 text-xs font-bold text-gray-400 uppercase">Percakapan</h3>
-        @livewire('chat-complaint', ['recordId' => $record->id])
+    {{-- Section Chat --}}
+    <div class="space-y-4">
+        <h3 class="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-tight">
+            {{ __('Percakapan') }}
+        </h3>
+        <div class="p-1">
+            @livewire('chat-complaint', ['recordId' => $record->id])
+        </div>
     </div>
 </div>

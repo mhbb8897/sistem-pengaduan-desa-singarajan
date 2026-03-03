@@ -105,9 +105,9 @@ class ComplaintSeeder extends Seeder
             // Enkripsi AES Key dengan RSA
             $encryptedAesKey = $publicKey->encrypt($aesKey);
 
-            // Simpan ke Database
+            // Insert
             DB::table('complaints')->insert([
-                'user_id' => $users[$index]->id, // Menggunakan index untuk mapping ke user
+                'user_id' => $users[$index]->id, // Mapping to unique user
                 'title' => $data['title'],
                 'category' => $data['category'],
                 'status' => 'diajukan',

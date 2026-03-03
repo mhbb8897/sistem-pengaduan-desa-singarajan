@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ComplaintResource\Pages;
 use App\Models\Complaint;
+use Filament\Forms\Components\Select;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -42,13 +43,13 @@ class ComplaintResource extends Resource
 
                     // 2. Form untuk Update Status di bagian bawah modal
                     ->form([
-                        \Filament\Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options([
                                 'diajukan' => 'Diajukan',
                                 'diproses' => 'Diproses',
                                 'selesai' => 'Selesai',
                             ])
-                            ->required()
+                            ->disabled(fn ($record) => $record?->status === 'selesai')
                             ->label('Update Status Pengaduan'),
                     ])
                     ->fillForm(fn (Complaint $record): array => [
@@ -64,7 +65,18 @@ class ComplaintResource extends Resource
                             ->success()
                             ->send();
                     })
-                    ->modalSubmitActionLabel('Simpan Perubahan Status'),
+                    // ✅ Disable seluruh form jika sudah selesai
+                    ->disabledForm(fn (Complaint $record) => $record->status === 'selesai')
+
+                    // ✅ Hilangkan tombol submit jika sudah selesai
+                    ->modalSubmitAction(fn ($action, Complaint $record) => $record->status === 'selesai'
+                            ? $action->hidden()
+                            : $action
+                    )
+                    ->modalCancelAction(fn ($action, Complaint $record) => $record->status === 'selesai'
+                            ? $action->hidden()
+                            : $action
+                    ),
             ]);
     }
 
