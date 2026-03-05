@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simpedesa/data/services/user_service.dart';
 import 'dart:convert';
 import 'presentation/pages/login_page.dart';
 import 'presentation/widgets/bottom_navigation.dart';
@@ -23,6 +24,20 @@ class MyApp extends StatelessWidget {
     if (user['role'] == 'admin') return false;
 
     return true;
+  }
+
+  void main() async {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // ✅ Load user sebelum app dijalankan
+    final userService = UserService();
+    await userService.loadUser();
+
+    print(
+      '🚀 [Main] App started, user: ${userService.getCurrentUser()?.name ?? "null"}',
+    );
+
+    runApp(const MyApp());
   }
 
   @override

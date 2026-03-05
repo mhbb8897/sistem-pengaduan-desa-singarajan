@@ -33,7 +33,6 @@ class PostPage extends StatelessWidget {
           );
         },
       ),
-      backgroundColor: Color.fromARGB(255, 6, 34, 117),
     );
   }
 }

@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simpedesa/data/models/user_model.dart';
+import 'package:simpedesa/data/services/user_service.dart';
 import 'package:simpedesa/presentation/widgets/bottom_navigation.dart';
 import 'package:simpedesa/presentation/pages/register_page.dart';
-import 'package:local_captcha/local_captcha.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,28 +17,14 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  final _captchaController = LocalCaptchaController();
-  final TextEditingController _captchaInputController = TextEditingController();
 
   bool isLoading = false;
 
   Future<void> login() async {
-    // final isValidCaptcha = _captchaController.validate(
-    //   _captchaInputController.text,
-    // );
-
-    // if (!isValidCaptcha) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text('Captcha salah'),
-    //       backgroundColor: Colors.red,
-    //     ),
-    //   );
-    //   return;
-    // }
     setState(() => isLoading = true);
 
     try {
+      // 1. Kirim Request ke API
       final response = await http.post(
         Uri.parse('http://127.0.0.1:8000/api/loginuser'),
         headers: {'Content-Type': 'application/json'},
@@ -47,24 +34,42 @@ class _LoginPageState extends State<LoginPage> {
         }),
       );
 
-      setState(() => isLoading = false);
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLogin', true);
-        await prefs.setString('user', jsonEncode(data['user']));
+        // ✅ 2. Pastikan data['user'] ada
+        if (data['user'] == null) {
+          throw Exception('Data user tidak ditemukan di response API');
+        }
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => BottomNavigationBarExampleApp()),
-        );
+        // ✅ 3. Convert JSON ke UserModel (Penting!)
+        final user = UserModel.fromJson(data['user']);
+
+        // ✅ DEBUG: Cek data sebelum disimpan
+        print('📥 [LOGIN] User diterima: ${user.name} (ID: ${user.id})');
+
+        // ✅ 4. Simpan VIA UserService (Bukan langsung ke SharedPreferences!)
+        // Ini akan otomatis update cache memory (+ save ke SharedPreferences)
+        await UserService().setUser(user);
+
+        // ✅ 5. Navigasi ke Home
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => BottomNavigationBarExampleApp()),
+          );
+        }
       } else {
         showError(data['message'] ?? 'Login gagal');
       }
     } catch (e) {
-      setState(() => isLoading = false);
-      showError('Terjadi kesalahan koneksi');
+      print('❌ [LOGIN ERROR] $e'); // Print error asli ke console
+      showError('Terjadi kesalahan: $e');
+    } finally {
+      // ✅ 6. Matikan loading hanya jika widget masih aktif
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
