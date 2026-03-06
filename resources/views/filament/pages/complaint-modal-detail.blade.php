@@ -60,15 +60,18 @@
             @endforeach
 
             {{-- Bukti Pendukung --}}
-            @if(isset($content['bukti_pendukung']))
+            @if(isset($content['bukti_pendukung']) && $content['bukti_pendukung'])
                 <div class="col-span-full pt-4">
                     <p class="text-xs font-semibold text-gray-500 uppercase mb-3">📁 Bukti Pendukung</p>
                     <div
                         class="inline-block p-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg">
-                        <a href="{{ asset('storage/news/fake-news.png') }}" target="_blank"
+                        {{-- Path mengarah ke storage/record/nama_file --}}
+                        <a href="{{ asset('storage/record/' . $content['bukti_pendukung']) }}" target="_blank"
                             class="block overflow-hidden rounded-md group">
-                            <img src="{{ asset('storage/news/fake-news.png') }}"
-                                class="max-w-xs transition duration-300 group-hover:scale-105" alt="Bukti">
+
+                            <img src="{{ asset('storage/record/' . $content['bukti_pendukung']) }}"
+                                class="max-w-xs transition duration-300 group-hover:scale-105" alt="Bukti Pengaduan">
+                            {{-- Fallback ke fake-news.png jika file utama tidak ditemukan --}}
                         </a>
                     </div>
                 </div>

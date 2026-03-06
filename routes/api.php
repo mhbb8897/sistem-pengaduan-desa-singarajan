@@ -1,12 +1,14 @@
 <?php
 
-use App\Http\Controllers\Login;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ComplaintController;
+use App\Http\Controllers\Api\ComplaintMessageController;
+use App\Http\Controllers\Api\NewsController;
 use App\Models\EncryptController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\NewsController;
 
 Route::get('/get-public-key', [EncryptController::class, 'getPublicKey']);
-Route::post('/loginuser', [Login::class, 'login']);
+Route::post('/loginuser', [AuthController::class, 'login']);
 Route::get('/ping', function () {
     return response()->json([
         'status' => 'ok',
@@ -18,5 +20,15 @@ Route::get('/ping', function () {
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{id}', [NewsController::class, 'show']);
 Route::post('/news', [NewsController::class, 'store']);
-Route::put('/news/{id}', [NewsController::class, 'update']);
-Route::delete('/news/{id}', [NewsController::class, 'destroy']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    // ✅ Complaints
+    Route::get('/complaint_data', [ComplaintController::class, 'index']); // List pengaduan user
+    Route::post('/complaints', [ComplaintController::class, 'store']);    // Buat pengaduan baru
+    Route::get('/complaints/{id}', [ComplaintController::class, 'show']); // Detail pengaduan
+    Route::patch('/complaints/{id}/read', [ComplaintController::class, 'markAsRead']); // Tandai dibaca
+
+    // ✅ Complaint Messages (Chat)
+    Route::get('/complaints/{id}/messages', [ComplaintMessageController::class, 'index']); // List chat
+    Route::post('/complaints/{id}/messages', [ComplaintMessageController::class, 'store']); // Kirim pesan
+});

@@ -12,8 +12,15 @@ class ComplaintMessageSeeder extends Seeder
     public function run(): void
     {
         $complaint = Complaint::first();
-        $user = User::first();
-        $admin = User::skip(value: 1)->first() ?? $user;
+        $user = User::whereDoesntHave('roles', function ($query) {
+            $query->where('name', 'super_admin');
+        })->first() ?? User::first();
+
+        // 3. Ambil Super Admin menggunakan scope dari Spatie/Shield
+        // Nama role default Filament Shield adalah 'super_admin'
+        $admin = User::role('super_admin')->first();
+
+        // Jika tidak ada super_admin, fallback ke user pertama
 
         if (! $complaint) {
             return;
@@ -23,7 +30,6 @@ class ComplaintMessageSeeder extends Seeder
         ComplaintMessage::create([
             'complaint_id' => $complaint->id,
             'user_id' => $user->id,
-            'sender_role' => 'user',
             'message' => 'Saya ingin menanyakan tindak lanjut dari pengaduan ini.',
         ]);
 
@@ -31,7 +37,6 @@ class ComplaintMessageSeeder extends Seeder
         ComplaintMessage::create([
             'complaint_id' => $complaint->id,
             'user_id' => $admin->id,
-            'sender_role' => 'admin',
             'message' => 'Pengaduan sedang kami proses, mohon menunggu.',
         ]);
     }

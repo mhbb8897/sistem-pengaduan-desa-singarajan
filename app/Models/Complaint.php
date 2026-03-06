@@ -16,6 +16,7 @@ class Complaint extends Model
         'title',
         'category',
         'status',
+        'attachment_path', // Tambahkan ini
         'encrypted_content',
         'encrypted_aes_key',
         'iv',

@@ -111,6 +111,7 @@ class ComplaintSeeder extends Seeder
                 'title' => $data['title'],
                 'category' => $data['category'],
                 'status' => 'diajukan',
+                'attachment_path' => 'record/image.png',
                 'encrypted_content' => base64_encode($ciphertext),
                 'encrypted_aes_key' => base64_encode($encryptedAesKey),
                 'iv' => base64_encode($iv),

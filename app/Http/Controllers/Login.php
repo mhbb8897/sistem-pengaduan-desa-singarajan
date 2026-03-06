@@ -19,7 +19,7 @@ class Login extends Controller
         // 2️⃣ Cari user
         $user = User::where('email', $request->email)->first();
 
-        // 3️⃣ Cek user & password
+        //  cheking user & password
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
@@ -27,7 +27,7 @@ class Login extends Controller
             ], 401);
         }
 
-        // 4️⃣ Response sukses (tanpa token dulu)
+        // Response success
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil',
