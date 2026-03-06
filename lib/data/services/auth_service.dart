@@ -1,25 +1,85 @@
+// lib/data/services/auth_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../models/login_request.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/api_client.dart';
+import '../../core/constants.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
+  final _api = ApiClient();
 
-  // ✅ Login ke API
-  Future<UserModel> login(LoginRequest request) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/loginuser'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    );
-
-    final data = jsonDecode(response.body);
+  // ✅ Login & simpan token + user
+  Future<UserModel> login(String email, String password) async {
+    final response = await _api.post('loginuser', {
+      'email': email,
+      'password': password,
+    }, requireAuth: false);
 
     if (response.statusCode == 200) {
-      return UserModel.fromJson(data['user']);
-    } else {
-      throw Exception(data['message'] ?? 'Login gagal');
+      final data = jsonDecode(response.body);
+
+      if (data['success'] == true && data['data'] != null) {
+        final userData = data['data']['user'];
+        final token = data['data']['access_token'];
+        final expiresIn =
+            data['data']['expires_in'] ?? AppConstants.tokenExpirationSeconds;
+
+        // ✅ Simpan token & user
+        await _saveToken(token, expiresIn);
+        final user = UserModel.fromJson(userData);
+        await _saveUser(user);
+
+        return user;
+      }
     }
+
+    final errorData = jsonDecode(response.body);
+    throw Exception(errorData['message'] ?? 'Login gagal');
+  }
+
+  // ✅ Logout & clear token
+  Future<void> logout() async {
+    try {
+      await _api.post('logout', {}, requireAuth: true);
+    } catch (_) {
+      // Ignore error, tetap clear local storage
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.keyAuthToken);
+    await prefs.remove(AppConstants.keyUserData);
+    await prefs.remove(AppConstants.keyTokenExpiresAt);
+  }
+
+  // ✅ Simpan token + expiration time
+  Future<void> _saveToken(String token, int expiresInSeconds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.keyAuthToken, token);
+
+    // ✅ Gunakan parameter expiresInSeconds (bukan hardcoded)
+    final expiresAt = DateTime.now().add(Duration(seconds: expiresInSeconds));
+
+    await prefs.setString(
+      AppConstants.keyTokenExpiresAt,
+      expiresAt.toIso8601String(),
+    );
+  }
+
+  // ✅ Simpan user data
+  Future<void> _saveUser(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.keyUserData, jsonEncode(user.toJson()));
+  }
+
+  // ✅ Get token saat ini
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(AppConstants.keyAuthToken);
+  }
+
+  // ✅ Cek apakah user sudah login
+  Future<bool> isLoggedIn() async {
+    final token = await getToken();
+    final isValid = await ApiClient().isTokenValid();
+    return token != null && isValid;
   }
 }

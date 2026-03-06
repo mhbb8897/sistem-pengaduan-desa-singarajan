@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+// lib/data/models/notification_model.dart
+// ❌ JANGAN import flutter/material.dart di sini
 
 class NotificationModel {
   final int id;
@@ -9,9 +10,9 @@ class NotificationModel {
   final String? category;
   final String? attachmentUrl;
 
-  // Fields untuk Chat
+  // Chat fields
   final String? senderName;
-  final String? senderRole; // 'user' atau 'super_admin'
+  final String? senderRole;
   final bool? isRead;
 
   NotificationModel({
@@ -27,7 +28,7 @@ class NotificationModel {
     this.isRead,
   });
 
-  // ✅ Factory dari JSON API Complaint
+  // ✅ Factory untuk Complaint
   factory NotificationModel.fromComplaintJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] ?? 0,
@@ -37,13 +38,11 @@ class NotificationModel {
       createdAt: json['created_at'] ?? json['date'] ?? '',
       category: json['category'],
       attachmentUrl: json['attachment_url'],
-      senderName: null,
-      senderRole: null,
       isRead: json['is_read'] ?? false,
     );
   }
 
-  // ✅ Factory dari JSON API Chat Message
+  // ✅ Factory untuk Message/Chat
   factory NotificationModel.fromMessageJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] ?? 0,
@@ -51,8 +50,8 @@ class NotificationModel {
       message: json['message'] ?? '',
       status: 'message',
       createdAt: json['created_at'] ?? '',
-      senderName: json['sender_name'] ?? json['user_name'] ?? 'Anonymous',
-      senderRole: json['sender_role'] ?? json['role'] ?? 'user',
+      senderName: json['sender_name'] ?? json['user_name'],
+      senderRole: json['sender_role'] ?? json['role'],
       isRead: json['is_read'] ?? false,
     );
   }
@@ -61,13 +60,13 @@ class NotificationModel {
   String get formattedDate {
     try {
       final date = DateTime.parse(createdAt);
-      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (_) {
       return createdAt;
     }
   }
 
-  // ✅ Helper: Status label (hanya 3 status)
+  // ✅ Helper: Status label
   String get statusLabel {
     if (status == 'message') return 'Pesan';
     switch (status.toLowerCase()) {
@@ -81,35 +80,12 @@ class NotificationModel {
     }
   }
 
-  // ✅ Helper: Warna status
-  Color get statusColor {
-    switch (status.toLowerCase()) {
-      case 'selesai':
-        return const Color(0xFF5CB85C); // Green
-      case 'diproses':
-        return const Color(0xFF4A90E2); // Blue
-      case 'diajukan':
-      default:
-        return const Color(0xFFD4AF37); // Gold
-    }
-  }
+  // ✅ Helper: Status key untuk UI mapping
+  String get statusKey => status.toLowerCase();
 
-  // ✅ Helper: Icon status
-  IconData get statusIcon {
-    switch (status.toLowerCase()) {
-      case 'selesai':
-        return Icons.check_circle;
-      case 'diproses':
-        return Icons.pending_actions;
-      case 'diajukan':
-      default:
-        return Icons.access_time;
-    }
-  }
-
-  // ✅ Helper: Cek apakah ini pesan chat
+  // ✅ Helper: Check if message
   bool get isMessage => status == 'message';
 
-  // ✅ Helper: Cek apakah sender adalah admin/petugas
+  // ✅ Helper: Check if from admin
   bool get isFromAdmin => senderRole == 'super_admin' || senderRole == 'admin';
 }

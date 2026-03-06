@@ -2,62 +2,132 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/notification_model.dart';
+import 'auth_service.dart';
 
 class NotificationService {
-  // ✅ Ganti sesuai device:
-  // Emulator Android: 10.0.2.2
-  // Physical Device: IP laptop (misal: 192.168.1.100)
   static const String _baseUrl = 'http://127.0.0.1:8000/api';
+  final _authService = AuthService();
 
-  // ✅ Ambil daftar pengaduan
+  // ✅ Get Headers dengan Token
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await _authService.getToken();
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ✅ GET Complaints (dengan DEBUG LOG)
   Future<List<NotificationModel>> getComplaints() async {
     try {
+      print('🔗 [NOTIF] Request: GET $_baseUrl/complaint_data');
+
       final response = await http
           .get(
             Uri.parse('$_baseUrl/complaint_data'),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
+            headers: await _getHeaders(),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
+
+      // ✅ DEBUG 1: Response mentah
+      print('📡 [NOTIF] Status: ${response.statusCode}');
+      print('📦 [NOTIF] Raw Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List<dynamic> jsonList = data is List
-            ? data
-            : (data['data'] ?? data['complaints'] ?? []);
+        try {
+          final data = jsonDecode(response.body);
 
-        return jsonList
-            .map((json) => NotificationModel.fromComplaintJson(json))
-            .toList();
+          // ✅ DEBUG 2: Struktur parsed
+          print('🔍 [NOTIF] Parsed Type: ${data.runtimeType}');
+          if (data is Map) {
+            print('🔑 [NOTIF] Keys: ${data.keys.toList()}');
+          }
+
+          // Handle berbagai format response
+          List<dynamic> jsonList = [];
+
+          if (data is List) {
+            jsonList = data;
+            print('✅ Format: Direct List');
+          } else if (data['success'] == true && data['data'] is List) {
+            jsonList = data['data'];
+            print('✅ Format: Wrapper Success');
+          } else if (data['data'] is List) {
+            jsonList = data['data'];
+            print('✅ Format: Simple Wrapper');
+          } else if (data['complaints'] is List) {
+            jsonList = data['complaints'];
+            print('✅ Format: Complaints Key');
+          }
+
+          if (jsonList.isEmpty) {
+            print('⚠️ [NOTIF] List kosong. Data: ${data}');
+            return [];
+          }
+
+          print('🔄 [NOTIF] Parsing ${jsonList.length} items...');
+
+          // Parse ke Model dengan error handling per item
+          final complaints = <NotificationModel>[];
+          for (var json in jsonList) {
+            try {
+              complaints.add(NotificationModel.fromComplaintJson(json));
+            } catch (e) {
+              print('❌ [NOTIF] Gagal parse 1 item: $e');
+              print('❌ [NOTIF] Item JSON: $json');
+            }
+          }
+
+          print('✅ [NOTIF] Berhasil: ${complaints.length} complaints');
+          return complaints;
+        } catch (e, stack) {
+          print('❌ [NOTIF] JSON Error: $e');
+          print('📋 [NOTIF] Stack: $stack');
+          throw Exception('Gagal parse JSON: $e');
+        }
+      } else if (response.statusCode == 401) {
+        print('❌ [NOTIF] Unauthorized (401) - Token invalid/expired');
+        throw Exception('SESSION_EXPIRED');
       } else {
-        throw Exception('Gagal mengambil data: ${response.statusCode}');
+        print('❌ [NOTIF] HTTP ${response.statusCode}: ${response.body}');
+        throw Exception('Server error: ${response.statusCode}');
       }
-    } catch (e) {
-      print('❌ Error fetching complaints: $e');
+    } catch (e, stack) {
+      print('❌ [NOTIF] General Error: $e');
+      print('📋 [NOTIF] Stack: $stack');
       rethrow;
     }
   }
 
-  // ✅ Ambil pesan chat untuk pengaduan tertentu
+  // ✅ GET Messages (Chat) - juga dengan debug
   Future<List<NotificationModel>> getMessages(int complaintId) async {
     try {
+      print(
+        '🔗 [CHAT] Request: GET $_baseUrl/complaints/$complaintId/messages',
+      );
+
       final response = await http
           .get(
             Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
+            headers: await _getHeaders(),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
+
+      print('📡 [CHAT] Status: ${response.statusCode}');
+      print('📦 [CHAT] Raw Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List<dynamic> jsonList = data is List
-            ? data
-            : (data['data'] ?? data['messages'] ?? []);
+        final data = jsonDecode(response.body);
+        List<dynamic> jsonList = [];
+
+        if (data is List) {
+          jsonList = data;
+        } else if (data['data'] is List) {
+          jsonList = data['data'];
+        } else if (data['messages'] is List) {
+          jsonList = data['messages'];
+        }
 
         return jsonList
             .map((json) => NotificationModel.fromMessageJson(json))
@@ -65,49 +135,49 @@ class NotificationService {
       }
       return [];
     } catch (e) {
-      print('❌ Error fetching messages: $e');
+      print('❌ [CHAT] Error: $e');
       return [];
     }
   }
 
-  // ✅ Kirim pesan balasan
+  // ✅ POST Send Message
   Future<bool> sendMessage(int complaintId, String message) async {
     try {
+      print(
+        '🔗 [CHAT] Request: POST $_baseUrl/complaints/$complaintId/messages',
+      );
+      print('📤 [CHAT] Body: {"message": "$message"}');
+
       final response = await http
           .post(
             Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
+            headers: await _getHeaders(),
             body: json.encode({'message': message}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 15));
 
+      print('📡 [CHAT] Response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print('❌ Error sending message: $e');
+      print('❌ [CHAT] Send Error: $e');
       return false;
     }
   }
 
-  // ✅ Tandai pengaduan sebagai sudah dibaca
+  // ✅ Mark as Read
   Future<bool> markAsRead(int complaintId) async {
     try {
       final response = await http
           .patch(
             Uri.parse('$_baseUrl/complaints/$complaintId/read'),
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
+            headers: await _getHeaders(),
             body: json.encode({'is_read': true}),
           )
           .timeout(const Duration(seconds: 10));
 
       return response.statusCode == 200;
     } catch (e) {
-      print('❌ Error marking as read: $e');
+      print('❌ [NOTIF] Mark Read Error: $e');
       return false;
     }
   }

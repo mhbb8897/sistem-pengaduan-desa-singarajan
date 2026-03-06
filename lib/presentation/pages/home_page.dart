@@ -1,9 +1,14 @@
+// lib/presentation/pages/home_page.dart
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../data/services/post_service.dart';
 import '../../data/services/user_service.dart';
+import '../../data/services/auth_service.dart';
 import '../../data/models/post_model.dart';
 import '../../data/models/user_model.dart';
 import '../widgets/post_card.dart';
+import '../pages/login_page.dart';
+import '../pages/notification_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,63 +21,128 @@ class _HomePageState extends State<HomePage> {
   late Future<List<PostModel>> _postsFuture;
   final PostService _postService = PostService();
   final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
+  final ApiClient _apiClient = ApiClient();
 
-  String _selectedCategory = 'Semua';
   UserModel? _currentUser;
-
-  final List<String> _categories = [
-    'Semua',
-    'Pemerintahan',
-    'Pembangunan',
-    'Sosial',
-    'Ekonomi',
-  ];
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadPosts();
-    _ensureUserLoaded();
+    _checkTokenValidity();
   }
 
-  Future<void> _ensureUserLoaded() async {
-    final user = await _userService.loadUser();
-    if (mounted && user != null) {
-      setState(() {
-        _currentUser = user;
-      });
+  // ✅ Cek validitas token
+  Future<void> _checkTokenValidity() async {
+    final isValid = await _apiClient.isTokenValid();
+    if (!isValid && mounted) {
+      await _handleSessionExpired();
     }
   }
 
-  // ✅ Load data user dari cache (sync)
+  // ✅ Handle session expired
+  Future<void> _handleSessionExpired() async {
+    await _authService.logout();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesi berakhir. Silakan login ulang.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
+  // ✅ Load data user dari cache
   void _loadUserData() {
-    final user = _userService.getCurrentUser(); // Ambil dari cache memory
+    final user = _userService.getCurrentUser();
     if (mounted) {
       setState(() {
+        // ✅ PERBAIKAN: Uncomment baris ini agar user data muncul di UI
         _currentUser = user;
       });
     }
   }
 
+  // ✅ Load posts
   void _loadPosts() {
     setState(() {
-      _postsFuture = _postService.fetchPosts();
+      _postsFuture = _postService.fetchPosts().catchError((error) {
+        if (error.toString().contains('SESSION_EXPIRED') ||
+            error.toString().contains('401')) {
+          _handleSessionExpired();
+        }
+        throw error;
+      });
     });
+  }
+
+  // ✅ Navigasi ke notifikasi
+  void _navigateToNotifications() async {
+    final isValid = await _apiClient.isTokenValid();
+    if (!isValid) {
+      await _handleSessionExpired();
+      return;
+    }
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotificationPage()),
+      );
+    }
+  }
+
+  // ✅ Logout manual
+  Future<void> _handleLogout() async {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.logout();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: () async {
-        _loadUserData(); // Refresh user data juga
+        _loadUserData();
         _loadPosts();
-        await _postsFuture;
+        await _postsFuture.catchError((_) => null);
       },
-      color: const Color(0xFF4F46E5),
+      color: const Color(0xFF243E8F),
       child: CustomScrollView(
         slivers: [
-          // ✅ SliverAppBar untuk Header
+          // ✅ Header
           SliverAppBar(
             floating: true,
             snap: true,
@@ -81,35 +151,37 @@ class _HomePageState extends State<HomePage> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: Text(
-                //         _getGreeting(),
-                //         style: TextStyle(
-                //           color: Colors.grey[600],
-                //           fontSize: 14,
-                //           fontWeight: FontWeight.w500,
-                //         ),
-                //         overflow: TextOverflow.ellipsis,
-                //       ),
-                //     ),
-                //     const SizedBox(width: 8),
-
-                //     CircleAvatar(
-                //       radius: 14,
-                //       backgroundColor: const Color(0xFF4F46E5),
-                //       child: Text(
-                //         _getInitials(),
-                //         style: const TextStyle(
-                //           color: Colors.white,
-                //           fontSize: 12,
-                //           fontWeight: FontWeight.bold,
-                //         ),
-                //       ),
-                //     ),
-                //   ],
-                // ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _getGreeting(),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _handleLogout,
+                      child: CircleAvatar(
+                        radius: 14,
+                        backgroundColor: const Color(0xFF243E8F),
+                        child: Text(
+                          _getInitials(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 const Text(
                   'Berita Desa',
@@ -121,21 +193,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                icon: Badge(
-                  smallSize: 8,
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                onPressed: () {
-                  // Navigasi ke notifikasi
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
           ),
 
           // ✅ Search Bar
@@ -158,65 +215,13 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 onChanged: (value) {
-                  // Implement search logic here
+                  // Optional: Implement client-side search
                 },
               ),
             ),
           ),
 
-          // ✅ Category Chips - ✅ FIXED: Added bottom padding
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 8,
-              ), // ✅ Padding bawah agar rapi
-              child: SizedBox(
-                height: 50,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  // ✅ Tambahkan padding horizontal & bottom
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                  ).copyWith(bottom: 8),
-                  itemCount: _categories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final category = _categories[index];
-                    final isSelected = _selectedCategory == category;
-                    return FilterChip(
-                      label: Text(category),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      },
-                      selectedColor: const Color(0xFF4F46E5).withOpacity(0.2),
-                      checkmarkColor: const Color(0xFF4F46E5),
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? const Color(0xFF4F46E5)
-                            : Colors.grey[700],
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFF4F46E5)
-                              : Colors.grey[300]!,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-
-          // ✅ Content List
+          // ✅ Content List (Tanpa Filter Kategori)
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: FutureBuilder<List<PostModel>>(
@@ -227,64 +232,68 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 if (snapshot.hasError) {
-                  return _buildErrorState(snapshot.error.toString());
+                  final error = snapshot.error.toString();
+                  if (error.contains('SESSION_EXPIRED') ||
+                      error.contains('401') ||
+                      error.contains('Unauthenticated')) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _handleSessionExpired();
+                    });
+                    return const SliverToBoxAdapter(child: SizedBox());
+                  }
+                  return _buildErrorState(error);
                 }
 
                 final posts = snapshot.data ?? [];
-
                 if (posts.isEmpty) {
                   return _buildEmptyState();
                 }
 
+                // ✅ Tampilkan SEMUA post langsung (tanpa filter)
                 return SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    return PostCard(post: posts[index]);
+                    final post = posts[index];
+                    return PostCard(post: post);
                   }, childCount: posts.length),
                 );
               },
             ),
           ),
 
-          // ✅ Bottom Padding untuk Bottom Navigation
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          // ✅ Bottom Padding
+          const SliverToBoxAdapter(child: SizedBox(height: 90)),
         ],
       ),
     );
   }
 
-  // 🕒 Helper untuk Salam Waktu + Nama User
-  // String _getGreeting() {
-  //   final hour = DateTime.now().hour;
-  //   String timeGreeting;
+  // 🕒 Helper: Greeting
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    String timeGreeting;
+    if (hour < 11) {
+      timeGreeting = 'Selamat Pagi';
+    } else if (hour < 15) {
+      timeGreeting = 'Selamat Siang';
+    } else if (hour < 18) {
+      timeGreeting = 'Selamat Sore';
+    } else {
+      timeGreeting = 'Selamat Malam';
+    }
+    return '$timeGreeting, ${_currentUser?.name}';
+  }
 
-  //   if (hour < 11) {
-  //     timeGreeting = 'Selamat Pagi';
-  //   } else if (hour < 15) {
-  //     timeGreeting = 'Selamat Siang';
-  //   } else if (hour < 18) {
-  //     timeGreeting = 'Selamat Sore';
-  //   } else {
-  //     timeGreeting = 'Selamat Malam';
-  //   }
+  // ✅ Helper: Initials
+  String _getInitials() {
+    if (_currentUser == null || _currentUser!.name.isEmpty) return '?';
+    final names = _currentUser!.name.trim().split(' ');
+    if (names.length >= 2) {
+      return '${names[0][0]}${names[1][0]}'.toUpperCase();
+    }
+    return names[0].substring(0, 1).toUpperCase();
+  }
 
-  //   if (_currentUser != null) {
-  //     return '$timeGreeting, ${_currentUser?.name}';
-  //   } else {
-  //     return '$timeGreeting, KOSONG';
-  //   }
-  // }
-
-  // ✅ Ambil Inisial Nama untuk Avatar
-  // String _getInitials() {
-  //   if (_currentUser == null) return '?';
-  //   final names = _currentUser!.name.split(' ');
-  //   if (names.length >= 2) {
-  //     return '${names[0][0]}${names[1][0]}'.toUpperCase();
-  //   }
-  //   return names[0].substring(0, 1).toUpperCase();
-  // }
-
-  // 🌫️ Shimmer Loading Effect
+  // 🌫️ Shimmer Loading
   Widget _buildShimmerLoading() {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
@@ -294,6 +303,30 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(
             color: Colors.grey[300],
             borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 16,
+                  width: double.infinity,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 8),
+                Container(height: 12, width: 200, color: Colors.grey[400]),
+              ],
+            ),
           ),
         ),
         childCount: 5,
@@ -320,9 +353,9 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              error,
+              error.length > 100 ? '${error.substring(0, 100)}...' : error,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500]),
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -330,15 +363,8 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.refresh),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F46E5),
+                backgroundColor: const Color(0xFF243E8F),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
             ),
           ],

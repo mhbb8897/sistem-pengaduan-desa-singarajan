@@ -1,5 +1,6 @@
 // lib/presentation/pages/notification_page.dart
 import 'package:flutter/material.dart';
+import 'package:simpedesa/presentation/pages/login_page.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/models/notification_model.dart';
 import 'complaint_chat_page.dart'; // ✅ Halaman chat terpisah
@@ -28,9 +29,14 @@ class _NotificationPageState extends State<NotificationPage> {
       _isLoading = true;
       _errorMessage = null;
     });
-
     try {
       final complaints = await _service.getComplaints();
+
+      print('✅ [UI] Received ${complaints.length} complaints');
+      if (complaints.isNotEmpty) {
+        print('📋 [UI] First item: ${complaints.first.title}');
+      }
+
       if (mounted) {
         setState(() {
           _complaints = complaints;
@@ -38,11 +44,24 @@ class _NotificationPageState extends State<NotificationPage> {
         });
       }
     } catch (e) {
+      print('❌ [UI] Load Error: $e');
+
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal memuat data. Periksa koneksi/server.';
+          _errorMessage = e.toString().contains('SESSION_EXPIRED')
+              ? 'Sesi berakhir. Silakan login ulang.'
+              : 'Gagal memuat data. Periksa koneksi/server.';
           _isLoading = false;
         });
+
+        if (e.toString().contains('SESSION_EXPIRED')) {
+          // Auto redirect to login
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+            (route) => false,
+          );
+        }
       }
     }
   }
@@ -220,34 +239,67 @@ class _NotificationPageState extends State<NotificationPage> {
 // =====================================================
 
 // ✅ Card Pengaduan - Status badge di ATAS
+// ✅ Di dalam class _ComplaintCard (bukan di model)
 class _ComplaintCard extends StatelessWidget {
   final NotificationModel complaint;
   final VoidCallback onTap;
 
   const _ComplaintCard({required this.complaint, required this.onTap});
 
+  // ✅ Pindahkan logic warna ke sini (UI Layer)
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        return const Color(0xFF5CB85C); // Green
+      case 'diproses':
+        return const Color(0xFF4A90E2); // Blue
+      case 'diajukan':
+      default:
+        return const Color(0xFFD4AF37); // Gold
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        return Icons.check_circle;
+      case 'diproses':
+        return Icons.pending_actions;
+      case 'diajukan':
+      default:
+        return Icons.access_time;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final statusColor = complaint.statusColor;
+    // ✅ Dapatkan Color object di sini, baru bisa pakai withOpacity
+    final statusColor = _getStatusColor(complaint.status);
 
     return GestureDetector(
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ STATUS BADGE - DI ATAS CARD (hanya 3 status)
+          // ✅ STATUS BADGE - DI ATAS CARD
           Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
+              color: statusColor.withOpacity(
+                0.15,
+              ), // ✅ Sekarang bisa pakai withOpacity!
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: statusColor.withOpacity(0.4)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(complaint.statusIcon, color: statusColor, size: 16),
+                Icon(
+                  _getStatusIcon(complaint.status),
+                  color: statusColor,
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   complaint.statusLabel,
@@ -261,7 +313,7 @@ class _ComplaintCard extends StatelessWidget {
             ),
           ),
 
-          // ✅ MAIN CARD
+          // ✅ MAIN CARD (kode selanjutnya sama...)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
