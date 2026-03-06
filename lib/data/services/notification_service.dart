@@ -1,122 +1,114 @@
+// lib/data/services/notification_service.dart
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../models/notification_model.dart';
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
-  factory NotificationService() => _instance;
-  NotificationService._internal();
+  // ✅ Ganti sesuai device:
+  // Emulator Android: 10.0.2.2
+  // Physical Device: IP laptop (misal: 192.168.1.100)
+  static const String _baseUrl = 'http://127.0.0.1:8000/api';
 
-  List<NotificationModel> _notifications = [];
-  static const String _keyNotifications = 'notifications';
-
-  // ✅ Load notifikasi dari storage
-  Future<List<NotificationModel>> getNotifications() async {
-    if (_notifications.isNotEmpty) {
-      return _notifications;
-    }
-
+  // ✅ Ambil daftar pengaduan
+  Future<List<NotificationModel>> getComplaints() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final notifJson = prefs.getStringList(_keyNotifications);
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/complaint_data'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
-      if (notifJson != null && notifJson.isNotEmpty) {
-        _notifications = notifJson
-            .map((json) => NotificationModel.fromJson(jsonDecode(json)))
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> jsonList = data is List
+            ? data
+            : (data['data'] ?? data['complaints'] ?? []);
+
+        return jsonList
+            .map((json) => NotificationModel.fromComplaintJson(json))
             .toList();
       } else {
-        // ✅ Data dummy jika belum ada
-        _notifications = _getDummyNotifications();
-        await _saveToStorage();
+        throw Exception('Gagal mengambil data: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Error loading notifications: $e');
-      _notifications = _getDummyNotifications();
-    }
-
-    return _notifications;
-  }
-
-  // ✅ Mark single notification as read
-  Future<void> markAsRead(String id) async {
-    final index = _notifications.indexWhere((n) => n.id == id);
-    if (index != -1) {
-      _notifications[index].markAsRead();
-      await _saveToStorage();
-      debugPrint('✅ Notification $id marked as read');
+      print('❌ Error fetching complaints: $e');
+      rethrow;
     }
   }
 
-  // ✅ Mark all as read
-  Future<void> markAllAsRead() async {
-    for (var notif in _notifications) {
-      notif.markAsRead();
-    }
-    await _saveToStorage();
-    debugPrint('✅ All notifications marked as read');
-  }
-
-  // ✅ Get unread count
-  int getUnreadCount() {
-    return _notifications.where((n) => !n.isRead).length;
-  }
-
-  // ✅ Save to SharedPreferences
-  Future<void> _saveToStorage() async {
+  // ✅ Ambil pesan chat untuk pengaduan tertentu
+  Future<List<NotificationModel>> getMessages(int complaintId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonList = _notifications
-          .map((n) => jsonEncode(n.toJson()))
-          .toList();
-      await prefs.setStringList(_keyNotifications, jsonList);
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> jsonList = data is List
+            ? data
+            : (data['data'] ?? data['messages'] ?? []);
+
+        return jsonList
+            .map((json) => NotificationModel.fromMessageJson(json))
+            .toList();
+      }
+      return [];
     } catch (e) {
-      debugPrint('❌ Error saving notifications: $e');
+      print('❌ Error fetching messages: $e');
+      return [];
     }
   }
 
-  // ✅ Dummy data untuk testing
-  List<NotificationModel> _getDummyNotifications() {
-    return [
-      NotificationModel(
-        id: '1',
-        title: 'Pengaduan Diproses',
-        message: 'Laporan fasilitas jalan sedang ditindaklanjuti',
-        status: 'Diproses',
-        time: '10 menit lalu',
-        isRead: false,
-      ),
-      NotificationModel(
-        id: '2',
-        title: 'Pengaduan Selesai',
-        message: 'Pengaduan layanan publik telah diselesaikan',
-        status: 'Selesai',
-        time: '1 jam lalu',
-        isRead: false,
-      ),
-      NotificationModel(
-        id: '3',
-        title: 'Pengaduan Ditolak',
-        message: 'Bukti pendukung tidak valid',
-        status: 'Ditolak',
-        time: 'Kemarin',
-        isRead: true,
-      ),
-      NotificationModel(
-        id: '4',
-        title: 'Pengaduan Baru Diterima',
-        message: 'Terima kasih telah melaporkan, admin akan segera meninjau',
-        status: 'Baru',
-        time: '2 jam lalu',
-        isRead: false,
-      ),
-    ];
+  // ✅ Kirim pesan balasan
+  Future<bool> sendMessage(int complaintId, String message) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'message': message}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print('❌ Error sending message: $e');
+      return false;
+    }
   }
 
-  // ✅ Clear all (untuk logout)
-  Future<void> clearAll() async {
-    _notifications.clear();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyNotifications);
+  // ✅ Tandai pengaduan sebagai sudah dibaca
+  Future<bool> markAsRead(int complaintId) async {
+    try {
+      final response = await http
+          .patch(
+            Uri.parse('$_baseUrl/complaints/$complaintId/read'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'is_read': true}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ Error marking as read: $e');
+      return false;
+    }
   }
 }

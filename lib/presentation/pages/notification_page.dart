@@ -1,6 +1,8 @@
+// lib/presentation/pages/notification_page.dart
 import 'package:flutter/material.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/models/notification_model.dart';
+import 'complaint_chat_page.dart'; // ✅ Halaman chat terpisah
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -10,52 +12,52 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  final _notifService = NotificationService();
-  List<NotificationModel> _notifications = [];
+  final _service = NotificationService();
+  List<NotificationModel> _complaints = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
+    _loadComplaints();
   }
 
-  Future<void> _loadNotifications() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadComplaints() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    final notifications = await _notifService.getNotifications();
-
-    if (mounted) {
-      setState(() {
-        _notifications = notifications;
-        _isLoading = false;
-      });
+    try {
+      final complaints = await _service.getComplaints();
+      if (mounted) {
+        setState(() {
+          _complaints = complaints;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal memuat data. Periksa koneksi/server.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  Future<void> _handleTap(NotificationModel notif) async {
-    if (!notif.isRead) {
-      await _notifService.markAsRead(notif.id);
-      await _loadNotifications(); // Refresh UI
-    }
-
-    // TODO: Navigate to detail page if needed
-    // Navigator.push(context, MaterialPageRoute(...));
-  }
-
-  Future<void> _markAllAsRead() async {
-    await _notifService.markAllAsRead();
-    await _loadNotifications();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Semua notifikasi sudah dibaca'),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
+  void _onComplaintTap(NotificationModel complaint) {
+    // ✅ Navigate ke halaman chat untuk pengaduan ini
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ComplaintChatPage(
+          complaintId: complaint.id,
+          complaintTitle: complaint.title,
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -65,16 +67,15 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ✅ Header
           _buildHeader(),
-
-          // ✅ List
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _notifications.isEmpty
+                : _errorMessage != null
+                ? _buildErrorState()
+                : _complaints.isEmpty
                 ? _buildEmptyState()
-                : _buildNotificationList(),
+                : _buildComplaintList(),
           ),
         ],
       ),
@@ -82,8 +83,6 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildHeader() {
-    final unreadCount = _notifService.getUnreadCount();
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
       decoration: const BoxDecoration(
@@ -93,121 +92,93 @@ class _NotificationPageState extends State<NotificationPage> {
           bottomRight: Radius.circular(30),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: gold, width: 2),
-                ),
-                child: const Icon(
-                  Icons.notifications_active,
-                  color: primaryBlue,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Notifikasi',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Update terbaru untuk Anda',
-                      style: TextStyle(fontSize: 14, color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: gold, width: 2),
+            ),
+            child: const Icon(
+              Icons.notifications_active,
+              color: primaryBlue,
+              size: 28,
+            ),
           ),
-
-          // ✅ Action Buttons
-          if (unreadCount > 0) ...[
-            const SizedBox(height: 16),
-            Row(
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: gold,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.circle, size: 8, color: Colors.white),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$unreadCount Belum Dibaca',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Daftar Pengaduan',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: _markAllAsRead,
-                  icon: const Icon(
-                    Icons.done_all,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  label: const Text(
-                    'Tandai Semua',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    // bor: BorderRadius.circular(20),
-                  ),
+                Text(
+                  'Klik untuk lihat percakapan',
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
             ),
-          ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _loadComplaints,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNotificationList() {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: _notifications.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final notif = _notifications[index];
-        return _NotifCard(
-          notif: notif,
-          onTap: () => _handleTap(notif),
-          primaryBlue: primaryBlue,
-          lightBlue: lightBlue,
-          green: green,
-          gold: gold,
-        );
-      },
+  Widget _buildComplaintList() {
+    return RefreshIndicator(
+      onRefresh: _loadComplaints,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _complaints.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final complaint = _complaints[index];
+          return _ComplaintCard(
+            complaint: complaint,
+            onTap: () => _onComplaintTap(complaint),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage!,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _loadComplaints,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Coba Lagi'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryBlue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -216,10 +187,10 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_none, size: 80, color: Colors.grey[300]),
+          Icon(Icons.inbox_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            'Tidak ada notifikasi',
+            'Belum ada pengaduan',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -228,7 +199,7 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Notifikasi akan muncul di sini',
+            'Ajukan pengaduan baru untuk memulai',
             style: TextStyle(color: Colors.grey[400]),
           ),
         ],
@@ -236,7 +207,7 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  // ✅ Warna dari Logo SimpeDesa
+  // ✅ Warna Theme SimpeDesa
   static const Color primaryBlue = Color(0xFF243E8F);
   static const Color lightBlue = Color(0xFF4A90E2);
   static const Color green = Color(0xFF5CB85C);
@@ -244,171 +215,148 @@ class _NotificationPageState extends State<NotificationPage> {
   static const Color bgGray = Color(0xFFF5F7FA);
 }
 
-// ✅ Card Widget (sama seperti sebelumnya, tambah onTap)
-class _NotifCard extends StatelessWidget {
-  final NotificationModel notif;
+// =====================================================
+// 🃏 HELPER WIDGETS
+// =====================================================
+
+// ✅ Card Pengaduan - Status badge di ATAS
+class _ComplaintCard extends StatelessWidget {
+  final NotificationModel complaint;
   final VoidCallback onTap;
-  final Color primaryBlue;
-  final Color lightBlue;
-  final Color green;
-  final Color gold;
 
-  const _NotifCard({
-    required this.notif,
-    required this.onTap,
-    required this.primaryBlue,
-    required this.lightBlue,
-    required this.green,
-    required this.gold,
-  });
-
-  IconData _getStatusIcon() {
-    switch (notif.status) {
-      case 'Selesai':
-        return Icons.check_circle;
-      case 'Diproses':
-        return Icons.pending_actions;
-      case 'Ditolak':
-        return Icons.cancel;
-      default:
-        return Icons.notifications_active;
-    }
-  }
-
-  Color _getStatusColor() {
-    switch (notif.status) {
-      case 'Selesai':
-        return green;
-      case 'Diproses':
-        return lightBlue;
-      case 'Ditolak':
-        return Colors.red.shade400;
-      default:
-        return gold;
-    }
-  }
+  const _ComplaintCard({required this.complaint, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final isUnread = !notif.isRead;
+    final statusColor = complaint.statusColor;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: isUnread
-              ? Border.all(color: primaryBlue.withOpacity(0.3), width: 2)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: isUnread
-                  ? primaryBlue.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.05),
-              blurRadius: isUnread ? 15 : 10,
-              offset: const Offset(0, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ STATUS BADGE - DI ATAS CARD (hanya 3 status)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: statusColor.withOpacity(0.4)),
             ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: _getStatusColor().withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(_getStatusIcon(), color: _getStatusColor(), size: 26),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notif.title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: isUnread
-                                ? primaryBlue
-                                : Colors.grey.shade800,
-                          ),
-                        ),
-                      ),
-                      if (isUnread)
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: primaryBlue,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(complaint.statusIcon, color: statusColor, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  complaint.statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    notif.message,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
-                      height: 1.4,
+                ),
+              ],
+            ),
+          ),
+
+          // ✅ MAIN CARD
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  complaint.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  complaint.message,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: Colors.grey.shade400,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: Colors.grey.shade400,
+                    const SizedBox(width: 4),
+                    Text(
+                      complaint.formattedDate,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        notif.time,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                      const Spacer(),
+                    ),
+                    if (complaint.category != null) ...[
+                      const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: _getStatusColor().withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _getStatusColor().withOpacity(0.3),
-                            width: 1,
-                          ),
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          notif.status,
+                          complaint.category!,
                           style: TextStyle(
-                            color: _getStatusColor(),
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ],
-                  ),
-                ],
-              ),
+                    const Spacer(),
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 16,
+                      color: Colors.blueAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Chat',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

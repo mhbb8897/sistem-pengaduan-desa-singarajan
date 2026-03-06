@@ -19,26 +19,75 @@ class _ReportPageState extends State<ReportPage> {
   final _lokasi = TextEditingController();
   final _deskripsi = TextEditingController();
 
-  // Perbaikan: Menggunakan Map untuk dynamic controllers agar scalable
+  // ✅ Dynamic controllers untuk field kategori
   final Map<String, TextEditingController> _dynamicControllers = {};
 
-  File? _image;
+  // ✅ UBAH: Support multiple files (max 5)
+  final List<File> _files = [];
   final _picker = ImagePicker();
+
+  // ✅ Konstanta validasi file
+  static const int _maxFileSize = 10 * 1024 * 1024; // 10 MB
+  static const int _maxFileCount = 5;
+  static const List<String> _allowedExtensions = [
+    'jpg', 'jpeg', 'png', 'gif', // Foto
+    'mp4', 'avi', 'mov', 'mkv', 'webm', // Video
+  ];
+
+  static final Map<String, RegExp> _regexPatterns = {
+    // Judul: alphanumeric, spasi, dan tanda baca umum (3-200 karakter)
+    'judul': RegExp(r"^[\w\s#\/\\\-.,;:]{5,250}$"),
+
+    // Lokasi: alphanumeric, spasi, #, /, \, -, ., , (5-250 karakter)
+    'lokasi': RegExp(r"^[\w\s#\/\\\-.,;:]{5,250}$"),
+
+    // Deskripsi: semua karakter termasuk newline (10-1000 karakter)
+    'deskripsi': RegExp(r"^[\s\S]{10,1000}$"),
+
+    // Nama: huruf, spasi, titik, apostrof (2-100 karakter)
+    'nama': RegExp(r"^[a-zA-Z\s'.]{2,100}$"),
+
+    // Layanan: mirip lokasi (2-150 karakter)
+    'layanan': RegExp(r"^[\w\s#\/\\\-.,;:]{2,150}$"),
+
+    // Umum: default pattern (2-200 karakter)
+    'umum': RegExp(r"^[\w\s#\/\\\-.,;:]{2,250}$"),
+  };
 
   final Map<String, List<Map<String, dynamic>>> kategoriFields = {
     'Fasilitas': [],
     'Kinerja Perangkat Desa': [
-      {'label': 'Nama Perangkat Desa', 'icon': Icons.person_outline},
+      {
+        'label': 'Nama Perangkat Desa',
+        'icon': Icons.person_outline,
+        'type': 'nama',
+      },
     ],
     'Layanan Publik': [
-      {'label': 'Nama Layanan / Unit', 'icon': Icons.account_balance_outlined},
+      {
+        'label': 'Nama Layanan / Unit',
+        'icon': Icons.account_balance_outlined,
+        'type': 'layanan',
+      },
     ],
     'Keluhan Sosial': [
-      {'label': 'Pihak yang Terlibat', 'icon': Icons.group_outlined},
+      {
+        'label': 'Pihak yang Terlibat',
+        'icon': Icons.group_outlined,
+        'type': 'umum',
+      },
     ],
     'Pelanggaran HAM': [
-      {'label': 'Jenis Pelanggaran', 'icon': Icons.gavel_outlined},
-      {'label': 'Pelaku / Terlapor', 'icon': Icons.person_search_outlined},
+      {
+        'label': 'Jenis Pelanggaran',
+        'icon': Icons.gavel_outlined,
+        'type': 'umum',
+      },
+      {
+        'label': 'Pelaku / Terlapor',
+        'icon': Icons.person_search_outlined,
+        'type': 'nama',
+      },
     ],
   };
 
@@ -53,15 +102,12 @@ class _ReportPageState extends State<ReportPage> {
     super.dispose();
   }
 
-  // Update controllers saat kategori berubah
   void _updateDynamicControllers() {
-    // Dispose controller lama
     for (var controller in _dynamicControllers.values) {
       controller.dispose();
     }
     _dynamicControllers.clear();
 
-    // Buat controller baru sesuai field kategori
     final fields = kategoriFields[_kategori] ?? [];
     for (var i = 0; i < fields.length; i++) {
       _dynamicControllers['field_$i'] = TextEditingController();
@@ -74,19 +120,150 @@ class _ReportPageState extends State<ReportPage> {
     _updateDynamicControllers();
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source, imageQuality: 70);
-    if (picked != null) {
-      setState(() => _image = File(picked.path));
+  // ✅ VALIDASI: Cek ekstensi file
+  bool _isValidExtension(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return _allowedExtensions.contains(ext);
+  }
+
+  // ✅ VALIDASI: Cek ukuran file
+  bool _isValidFileSize(File file) {
+    return file.lengthSync() <= _maxFileSize;
+  }
+
+  // ✅ VALIDASI: Format pesan error ukuran file
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  // ✅ PICK FILE: Support foto & video, multi pick dengan validasi
+  Future<void> _pickFiles() async {
+    // ✅ Cek limit file
+    if (_files.length >= _maxFileCount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Maksimal $_maxFileCount file boleh diunggah"),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // ✅ Pick multiple media (image & video)
+      final picked = await _picker.pickMultiImage(
+        imageQuality: 70,
+        limit: _maxFileCount - _files.length,
+      );
+
+      // ✅ Tambahkan juga opsi pick video (jika perlu)
+      // Note: pickMultiImage hanya untuk gambar. Untuk video, gunakan pickVideo terpisah
+      // Jika ingin support video, tambahkan logika berikut:
+      /*
+      final pickedVideo = await _picker.pickVideo(source: ImageSource.gallery);
+      if (pickedVideo != null) {
+        // validasi video...
+      }
+      */
+
+      for (var item in picked) {
+        final file = File(item.path);
+
+        // ✅ Validasi ekstensi
+        if (!_isValidExtension(item.path)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Format file tidak didukung: ${item.path.split('.').last}",
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          continue;
+        }
+
+        // ✅ Validasi ukuran
+        if (!_isValidFileSize(file)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Ukuran file terlalu besar: ${_formatFileSize(file.lengthSync())} (maks 10MB)",
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          continue;
+        }
+
+        // ✅ Tambahkan ke list jika lolos validasi
+        if (_files.length < _maxFileCount) {
+          setState(() => _files.add(file));
+        }
+      }
+
+      // ✅ Feedback jika berhasil
+      if (picked.isNotEmpty && _files.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${picked.length} file berhasil ditambahkan"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal memilih file: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
+  // ✅ Hapus file dari list
+  void _removeFile(int index) {
+    setState(() => _files.removeAt(index));
+  }
+
+  // ✅ VALIDASI FORM: Regex + required
+  String? _validateWithRegex(String? value, String label, String patternKey) {
+    if (value == null || value.trim().isEmpty) {
+      return '$label wajib diisi';
+    }
+    final pattern = _regexPatterns[patternKey] ?? _regexPatterns['umum']!;
+    if (!pattern.hasMatch(value.trim())) {
+      return 'Format $label tidak valid';
+    }
+    return null;
+  }
+
   void _submit() async {
+    // ✅ Validasi form teks
     if (!_formKey.currentState!.validate()) return;
+
+    // ✅ Validasi file: minimal 1 file
+    if (_files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Minimal 1 bukti foto/video harus diunggah"),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
-    // Simulasi proses
+    // Simulasi proses submit
     await Future.delayed(const Duration(seconds: 2));
 
     setState(() => _isLoading = false);
@@ -97,23 +274,24 @@ class _ReportPageState extends State<ReportPage> {
           content: const Text("Pengaduan berhasil dikirim"),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
       );
-      // Reset form jika perlu
+      // Reset form
       _formKey.currentState?.reset();
-      setState(() => _image = null);
+      setState(() {
+        _files.clear();
+        // _image = null; // jika masih ada referensi lama
+      });
       _updateDynamicControllers();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Warna Tema
-    const primaryColor = Color(0xFF4F46E5); // Indigo
+    const primaryColor = Color(0xFF4F46E5);
     const backgroundColor = Color(0xFFF3F4F6);
 
     return Scaffold(
@@ -127,7 +305,7 @@ class _ReportPageState extends State<ReportPage> {
         elevation: 0,
         foregroundColor: Colors.black87,
         centerTitle: true,
-        automaticallyImplyLeading: false, // ✅ Tambahkan baris ini
+        automaticallyImplyLeading: false,
       ),
       body: Form(
         key: _formKey,
@@ -178,18 +356,26 @@ class _ReportPageState extends State<ReportPage> {
                 title: "Informasi Utama",
                 icon: Icons.info_outline,
                 children: [
-                  _input('Judul Laporan', _judul, Icons.title, primaryColor),
-                  _input(
+                  _inputRegex(
+                    'Judul Laporan',
+                    _judul,
+                    Icons.title,
+                    primaryColor,
+                    'judul',
+                  ),
+                  _inputRegex(
                     'Lokasi Kejadian',
                     _lokasi,
                     Icons.location_on_outlined,
                     primaryColor,
+                    'lokasi',
                   ),
-                  _input(
+                  _inputRegex(
                     'Deskripsi',
                     _deskripsi,
                     Icons.description_outlined,
                     primaryColor,
+                    'deskripsi',
                     maxLines: 4,
                   ),
                 ],
@@ -197,7 +383,7 @@ class _ReportPageState extends State<ReportPage> {
 
               const SizedBox(height: 20),
 
-              // Dynamic Fields Card (Jika ada)
+              // Dynamic Fields Card
               if (kategoriFields[_kategori]!.isNotEmpty)
                 _buildSectionCard(
                   title: "Detail Tambahan",
@@ -209,9 +395,9 @@ class _ReportPageState extends State<ReportPage> {
 
               // Upload Bukti Card
               _buildSectionCard(
-                title: "Bukti Foto",
+                title: "Bukti Foto/Video",
                 icon: Icons.image_outlined,
-                children: [_buildImagePicker()],
+                children: [_buildFilePicker()],
               ),
 
               const SizedBox(height: 30),
@@ -225,6 +411,8 @@ class _ReportPageState extends State<ReportPage> {
       ),
     );
   }
+
+  // ... [Widget helper lainnya tetap sama, hanya _input diganti _inputRegex] ...
 
   Widget _buildSectionCard({
     required String title,
@@ -293,9 +481,10 @@ class _ReportPageState extends State<ReportPage> {
       onChanged: (val) {
         setState(() {
           _kategori = val!;
-          _updateDynamicControllers(); // Reset controllers saat kategori berubah
+          _updateDynamicControllers();
         });
       },
+      validator: (value) => value == null ? 'Kategori wajib dipilih' : null,
     );
   }
 
@@ -304,20 +493,24 @@ class _ReportPageState extends State<ReportPage> {
     return List.generate(fields.length, (index) {
       final controller =
           _dynamicControllers['field_$index'] ?? TextEditingController();
-      return _input(
+      final fieldType = fields[index]['type'] ?? 'umum';
+      return _inputRegex(
         fields[index]['label'],
         controller,
         fields[index]['icon'],
         primaryColor,
+        fieldType,
       );
     });
   }
 
-  Widget _input(
+  // ✅ INPUT dengan Regex Validation
+  Widget _inputRegex(
     String label,
     TextEditingController controller,
     IconData icon,
-    Color primaryColor, {
+    Color primaryColor,
+    String patternKey, {
     int maxLines = 1,
   }) {
     return Padding(
@@ -325,8 +518,7 @@ class _ReportPageState extends State<ReportPage> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        validator: (value) =>
-            value == null || value.isEmpty ? '$label wajib diisi' : null,
+        validator: (value) => _validateWithRegex(value, label, patternKey),
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: Colors.grey),
@@ -353,103 +545,126 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  Widget _buildImagePicker() {
+  // ✅ FILE PICKER dengan preview multiple & remove
+  Widget _buildFilePicker() {
     return Column(
       children: [
-        if (_image != null)
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image: FileImage(_image!),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    ), // ✅ backgroundBlendMode dihapus
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black54,
+        // Preview files
+        if (_files.isNotEmpty) ...[
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _files.length,
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: FileImage(_files[index]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                    onPressed: () => setState(() => _image = null),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          Container(
-            height: 150,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey[300]!,
-                style: BorderStyle.solid,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.cloud_upload_outlined,
-                  size: 40,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Belum ada foto dipilih",
-                  style: TextStyle(color: Colors.grey[500]),
-                ),
-              ],
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _removeFile(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Indikator tipe file
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _files[index].path.split('.').last.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 12),
+        ],
+
+        // Info counter
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.camera_alt, size: 18),
-                label: const Text("Kamera"),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: const BorderSide(color: Color(0xFF4F46E5)),
-                  foregroundColor: const Color(0xFF4F46E5),
-                ),
+            Text(
+              "${_files.length} / $_maxFileCount file",
+              style: TextStyle(
+                color: _files.length >= _maxFileCount
+                    ? Colors.red
+                    : Colors.grey[600],
+                fontSize: 12,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.image, size: 18),
-                label: const Text("Galeri"),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  side: const BorderSide(color: Color(0xFF4F46E5)),
-                  foregroundColor: const Color(0xFF4F46E5),
-                ),
-              ),
+            Text(
+              "Maks 10MB/file",
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
           ],
         ),
+        const SizedBox(height: 8),
+
+        // Pick button
+        OutlinedButton.icon(
+          onPressed: _files.length >= _maxFileCount ? null : _pickFiles,
+          icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+          label: Text(_files.isEmpty ? "Pilih Foto/Video" : "Tambah File"),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            side: const BorderSide(color: Color(0xFF4F46E5)),
+            foregroundColor: const Color(0xFF4F46E5),
+          ),
+        ),
+
+        // Helper text
+        if (_files.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              "Format: JPG, PNG, MP4, dll • Maksimal 5 file • Maksimal 10MB per file",
+              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+          ),
       ],
     );
   }
