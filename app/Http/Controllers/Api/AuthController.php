@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
-class AuthController extends Controller // ✅ Nama Controller lebih standar
+class AuthController extends Controller
 {
     /**
      * Handle login user dan return Bearer Token

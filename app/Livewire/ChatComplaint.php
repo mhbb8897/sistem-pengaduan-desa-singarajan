@@ -30,6 +30,7 @@ class ChatComplaint extends Component
             'complaint_id' => $this->recordId,
             'user_id' => auth()->id(),
             'message' => $this->message,
+            'sender_role' => auth()->user()->hasRole('super_admin') ? 'super_admin' : 'user',
         ]);
 
         $this->message = ''; // Reset input

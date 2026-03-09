@@ -18,17 +18,15 @@ class ComplaintMessageController extends Controller
     public function index(int $id): JsonResponse
     {
         $user = Auth::user();
-
-        // Validasi: user hanya bisa akses chat di pengaduan miliknya
-        $complaint = Complaint::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+        $complaint = Complaint::find($id);
 
         if (! $complaint) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengaduan tidak ditemukan',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Pengaduan tidak ditemukan'], 404);
+        }
+
+        // Hak akses: Admin boleh lihat semua, User hanya boleh lihat miliknya
+        if (! $user->hasRole('super_admin') && $complaint->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
         $messages = ComplaintMessage::with('user')
@@ -41,53 +39,44 @@ class ComplaintMessageController extends Controller
                     'message' => $msg->message,
                     'created_at' => $msg->created_at->toISOString(),
                     'sender_name' => $msg->user->name,
-                    'sender_role' => $msg->sender_role, // 'user' atau 'super_admin'
-                    'is_read' => $msg->is_read ?? false,
+                    // Pastikan sender_role diambil dari kolom di database
+                    'sender_role' => $msg->sender_role,
+                    'is_read' => (bool) $msg->is_read,
                 ];
             });
 
-        return response()->json([
-            'success' => true,
-            'data' => $messages,
-        ]);
+        return response()->json(['success' => true, 'data' => $messages]);
     }
 
-    /**
-     * POST /api/complaints/{id}/messages
-     * Kirim pesan baru
-     */
     public function store(Request $request, int $id): JsonResponse
     {
         $user = Auth::user();
+        $complaint = Complaint::find($id);
+
+        if (! $complaint) {
+            return response()->json(['success' => false, 'message' => 'Pengaduan tidak ditemukan'], 404);
+        }
+
+        // Validasi akses kirim pesan
+        if (! $user->hasRole('super_admin') && $complaint->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
 
         $validated = $request->validate([
             'message' => 'required|string|max:1000',
         ]);
 
-        // Validasi: user hanya bisa kirim pesan ke pengaduan miliknya
-        $complaint = Complaint::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if (! $complaint) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengaduan tidak ditemukan',
-            ], 404);
-        }
-
-        // Tentukan role pengirim
+        // ✅ Tentukan role secara eksplisit sesuai permintaan Anda
         $senderRole = $user->hasRole('super_admin') ? 'super_admin' : 'user';
 
         $message = ComplaintMessage::create([
             'complaint_id' => $id,
             'user_id' => $user->id,
-            'sender_role' => $senderRole,
+            'sender_role' => $senderRole, // Akan tersimpan 'super_admin' atau 'user'
             'message' => $validated['message'],
             'is_read' => false,
         ]);
 
-        // Update updated_at pada complaint agar status terbaru
         $complaint->touch();
 
         return response()->json([

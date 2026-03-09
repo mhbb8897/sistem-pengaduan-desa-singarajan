@@ -51,7 +51,7 @@ class ComplaintSeeder extends Seeder
                     'deskripsi' => 'Pelayanan sangat lambat dan petugas meninggalkan meja saat jam kerja.',
                     'lokasi' => 'Loket Pendaftaran',
                     'tanggal_dan_waktu_kejadian' => '2023-10-25 10:30',
-                    'bukti_pendukung' => 'rekaman_suara.mp3',
+                    'bukti_pendukung' => 'foto_jalan_rusak.jpg',
                 ],
             ],
             [
@@ -62,7 +62,7 @@ class ComplaintSeeder extends Seeder
                     'deskripsi' => 'Sudah 3 bulan KTP tidak kunjung selesai tanpa kejelasan.',
                     'lokasi' => 'Kecamatan ABC',
                     'tanggal_dan_waktu_kejadian' => '2023-10-10',
-                    'bukti_pendukung' => 'resi_pengambilan.pdf',
+                    'bukti_pendukung' => 'foto_jalan_rusak.jpg',
                 ],
             ],
             [
@@ -75,7 +75,7 @@ class ComplaintSeeder extends Seeder
                     'lokasi' => 'Balai Pertemuan RT 05',
                     'tanggal_dan_waktu_kejadian' => '2023-11-01 20:00',
                     'pihak_yang_terlibat' => 'Warga RT 05 dan Oknum X',
-                    'bukti_pendukung' => 'video_kejadian.mp4',
+                    'bukti_pendukung' => 'foto_jalan_rusak.jpg',
                 ],
             ],
             [
@@ -85,7 +85,7 @@ class ComplaintSeeder extends Seeder
                     'deskripsi' => 'Tetangga menyalakan musik dengan volume tinggi hingga dini hari.',
                     'lokasi' => 'Blok B Nomor 12',
                     'tanggal_dan_waktu_kejadian' => 'Setiap Malam Jumat',
-                    'bukti_pendukung' => 'video_noise.mp4',
+                    'bukti_pendukung' => 'foto_jalan_rusak.jpg',
                 ],
             ], ];
         // 4. Loop SATU KALI saja
