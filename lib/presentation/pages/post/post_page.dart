@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../controllers/post_controller.dart';
+import '../../controllers/post_controller.dart';
 
 class PostPage extends StatelessWidget {
   final controller = PostController();

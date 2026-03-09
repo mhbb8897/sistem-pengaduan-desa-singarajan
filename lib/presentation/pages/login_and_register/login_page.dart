@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simpedesa/core/constants.dart';
 import 'package:simpedesa/data/models/user_model.dart';
 import 'package:simpedesa/data/services/user_service.dart';
 import 'package:simpedesa/presentation/widgets/bottom_navigation.dart';
@@ -23,9 +24,6 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isLoading = false;
   bool _obscurePassword = true;
-
-  // ✅ Konfigurasi API
-  static const String _baseUrl = 'http://127.0.0.1:8000/api/loginuser';
 
   // ✅ Gunakan key yang SAMA PERSIS dengan ApiClient & AuthService
   static const String _keyToken = 'auth_token';
@@ -54,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       // 1. Kirim Request ke API
       final response = await http
           .post(
-            Uri.parse(_baseUrl),
+            Uri.parse('${AppConstants.baseUrl}/loginuser'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',

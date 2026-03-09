@@ -100,169 +100,130 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ✅ Logout manual
-  Future<void> _handleLogout() async {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Konfirmasi Logout'),
-        content: const Text('Apakah Anda yakin ingin keluar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _authService.logout();
-              if (mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              }
-            },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
+  // lib/presentation/pages/home_page.dart
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        _loadUserData();
-        _loadPosts();
-        await _postsFuture.catchError((_) => null);
-      },
-      color: const Color(0xFF243E8F),
-      child: CustomScrollView(
-        slivers: [
-          // ✅ Header
-          SliverAppBar(
-            floating: true,
-            snap: true,
-            elevation: 0,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return Scaffold(
+      backgroundColor: const Color(
+        0xFFF8FAFC,
+      ), // Background abu sangat muda agar konten stand out
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _loadUserData();
+          _loadPosts();
+          await _postsFuture.catchError((_) => null);
+        },
+        color: const Color(0xFF243E8F),
+        child: CustomScrollView(
+          slivers: [
+            // ✅ Modern Header (Tanpa Logo User)
+            SliverAppBar(
+              expandedHeight: 100,
+              floating: true,
+              pinned: true,
+              elevation: 0,
+
+              automaticallyImplyLeading:
+                  false, // Menghapus tombol back otomatis jika ada
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsetsDirectional.only(
+                  start: 16,
+                  top: 10,
+                  bottom: 16,
+                ),
+                centerTitle: false,
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF243E8F), Color(0xFF4A90E2)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+                title: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize
+                      .min, // WAJIB agar kolom tidak mengambil ruang sisa
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        _getGreeting(),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 4),
+                    Text(
+                      _getGreeting(),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: _handleLogout,
-                      child: CircleAvatar(
-                        radius: 14,
-                        backgroundColor: const Color(0xFF243E8F),
-                        child: Text(
-                          _getInitials(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    const Text(
+                      'SimpeDesa Berita',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Berita Desa',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
 
-          // ✅ Search Bar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Cari berita...',
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
+            // ✅ Search Bar yang lebih "Tebal" dan Berwarna
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cari kabar desa hari ini...',
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Color(0xFF243E8F),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
                   ),
                 ),
-                onChanged: (value) {
-                  // Optional: Implement client-side search
+              ),
+            ),
+
+            // ✅ Post List
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: FutureBuilder<List<PostModel>>(
+                future: _postsFuture,
+                builder: (context, snapshot) {
+                  // ... (Logika Snapsot Tetap Sama)
+                  final posts = snapshot.data ?? [];
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: PostCard(
+                          post: posts[index],
+                        ), // Pastikan PostCard Anda menggunakan desain elevasi rendah
+                      );
+                    }, childCount: posts.length),
+                  );
                 },
               ),
             ),
-          ),
-
-          // ✅ Content List (Tanpa Filter Kategori)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: FutureBuilder<List<PostModel>>(
-              future: _postsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return _buildShimmerLoading();
-                }
-
-                if (snapshot.hasError) {
-                  final error = snapshot.error.toString();
-                  if (error.contains('SESSION_EXPIRED') ||
-                      error.contains('401') ||
-                      error.contains('Unauthenticated')) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _handleSessionExpired();
-                    });
-                    return const SliverToBoxAdapter(child: SizedBox());
-                  }
-                  return _buildErrorState(error);
-                }
-
-                final posts = snapshot.data ?? [];
-                if (posts.isEmpty) {
-                  return _buildEmptyState();
-                }
-
-                // ✅ Tampilkan SEMUA post langsung (tanpa filter)
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final post = posts[index];
-                    return PostCard(post: post);
-                  }, childCount: posts.length),
-                );
-              },
-            ),
-          ),
-
-          // ✅ Bottom Padding
-          const SliverToBoxAdapter(child: SizedBox(height: 90)),
-        ],
+          ],
+        ),
       ),
     );
   }

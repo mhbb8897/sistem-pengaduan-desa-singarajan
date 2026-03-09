@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simpedesa/data/services/user_service.dart';
 import 'dart:convert';
-import 'presentation/pages/login_page.dart';
+import '../../presentation/pages/login_and_register/login_page.dart';
 import 'presentation/widgets/bottom_navigation.dart';
 
 void main() {

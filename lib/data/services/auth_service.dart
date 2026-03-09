@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api_client.dart';
 import '../../core/constants.dart';
 import '../models/user_model.dart';
+import 'package:http/http.dart' as http;
 
 class AuthService {
   final _api = ApiClient();
@@ -81,5 +82,31 @@ class AuthService {
     final token = await getToken();
     final isValid = await ApiClient().isTokenValid();
     return token != null && isValid;
+  }
+
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('${AppConstants.baseUrl}/user/registeruser'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'password_confirmation':
+            password, // Biasanya backend Laravel membutuhkan ini
+      }),
+    );
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return UserModel.fromJson(data['data']);
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['message'] ?? 'Gagal melakukan pendaftaran');
+    }
   }
 }

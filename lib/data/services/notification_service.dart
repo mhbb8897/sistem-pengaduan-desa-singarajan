@@ -30,10 +30,6 @@ class NotificationService {
           )
           .timeout(const Duration(seconds: 15));
 
-      // ✅ DEBUG 1: Response mentah
-      print('📡 [NOTIF] Status: ${response.statusCode}');
-      print('📦 [NOTIF] Raw Body: ${response.body}');
-
       if (response.statusCode == 200) {
         try {
           final data = jsonDecode(response.body);
@@ -75,15 +71,12 @@ class NotificationService {
               complaints.add(NotificationModel.fromComplaintJson(json));
             } catch (e) {
               print('❌ [NOTIF] Gagal parse 1 item: $e');
-              print('❌ [NOTIF] Item JSON: $json');
             }
           }
 
           print('✅ [NOTIF] Berhasil: ${complaints.length} complaints');
           return complaints;
-        } catch (e, stack) {
-          print('❌ [NOTIF] JSON Error: $e');
-          print('📋 [NOTIF] Stack: $stack');
+        } catch (e) {
           throw Exception('Gagal parse JSON: $e');
         }
       } else if (response.statusCode == 401) {

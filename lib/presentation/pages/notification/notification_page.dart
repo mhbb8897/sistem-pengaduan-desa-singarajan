@@ -1,9 +1,9 @@
 // lib/presentation/pages/notification_page.dart
 import 'package:flutter/material.dart';
-import 'package:simpedesa/presentation/pages/login_page.dart';
-import '../../data/services/notification_service.dart';
-import '../../data/models/notification_model.dart';
-import 'complaint_chat_page.dart'; // ✅ Halaman chat terpisah
+import 'package:simpedesa/presentation/pages/complaint/complaint_detail_page.dart';
+import 'package:simpedesa/presentation/pages/login_and_register/login_page.dart';
+import '../../../data/services/notification_service.dart';
+import '../../../data/models/notification_model.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -71,7 +71,7 @@ class _NotificationPageState extends State<NotificationPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ComplaintChatPage(
+        builder: (context) => ComplaintDetailPage(
           complaintId: complaint.id,
           complaintTitle: complaint.title,
         ),
@@ -141,7 +141,7 @@ class _NotificationPageState extends State<NotificationPage> {
                   ),
                 ),
                 Text(
-                  'Klik untuk lihat percakapan',
+                  'Klik untuk lihat detail pengaduan',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ],
@@ -234,12 +234,7 @@ class _NotificationPageState extends State<NotificationPage> {
   static const Color bgGray = Color(0xFFF5F7FA);
 }
 
-// =====================================================
-// 🃏 HELPER WIDGETS
-// =====================================================
-
-// ✅ Card Pengaduan - Status badge di ATAS
-// ✅ Di dalam class _ComplaintCard (bukan di model)
+// ✅ Card Pengaduan - Status badge di SAMPING judul
 class _ComplaintCard extends StatelessWidget {
   final NotificationModel complaint;
   final VoidCallback onTap;
@@ -273,142 +268,132 @@ class _ComplaintCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Dapatkan Color object di sini, baru bisa pakai withOpacity
     final statusColor = _getStatusColor(complaint.status);
 
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ✅ STATUS BADGE - DI ATAS CARD
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(
-                0.15,
-              ), // ✅ Sekarang bisa pakai withOpacity!
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: statusColor.withOpacity(0.4)),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _getStatusIcon(complaint.status),
-                  color: statusColor,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  complaint.statusLabel,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ✅ MAIN CARD (kode selanjutnya sama...)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ✅ HEADER: Judul + Status Badge (sejajar)
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  complaint.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  complaint.message,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 14,
-                      color: Colors.grey.shade400,
+                // Judul Pengaduan (flexible)
+                Expanded(
+                  child: Text(
+                    complaint.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      complaint.formattedDate,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // ✅ Status Badge (di kanan judul)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getStatusIcon(complaint.status),
+                        color: statusColor,
+                        size: 14,
                       ),
-                    ),
-                    if (complaint.category != null) ...[
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          complaint.category!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const SizedBox(width: 4),
+                      Text(
+                        complaint.statusLabel,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
                         ),
                       ),
                     ],
-                    const Spacer(),
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 16,
-                      color: Colors.blueAccent,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Chat',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blueAccent,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            const SizedBox(height: 10),
+
+            // ✅ Pesan/Deskripsi
+            Text(
+              complaint.message,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 12),
+
+            // ✅ Footer: Tanggal + Kategori (tanpa Chat)
+            Row(
+              children: [
+                // 📅 Tanggal
+                Icon(Icons.access_time, size: 14, color: Colors.grey.shade400),
+                const SizedBox(width: 4),
+                Text(
+                  complaint.formattedDate,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                ),
+
+                // 🏷️ Kategori (jika ada)
+                if (complaint.category != null) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      complaint.category!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

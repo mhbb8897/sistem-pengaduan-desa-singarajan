@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import '../../data/services/user_service.dart';
 import '../../data/models/user_model.dart';
 import '../pages/login_page.dart';
@@ -14,6 +18,8 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
   final _userService = UserService();
   UserModel? _user;
   bool _isLoading = true;
@@ -27,6 +33,12 @@ class _ProfilePageState extends State<ProfilePage> {
   static const Color textDark = Color(0xFF2D3748);
   static const Color textGray = Color(0xFF718096);
 
+  // ✅ WhatsApp Config
+  static const String whatsappNumber =
+      '6281234567890'; // Ganti dengan nomor admin
+  static const String whatsappMessage =
+      'Halo Admin SimpeDesa, saya butuh bantuan mengenai...';
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +47,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserData() async {
     setState(() => _isLoading = true);
-
     try {
-      // Load dari cache atau storage
       final user = await _userService.loadUser();
-
       if (mounted) {
         setState(() {
           _user = user;
@@ -48,9 +57,183 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       debugPrint('❌ Error loading user: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ NAVIGATE TO EDIT PROFILE PAGE (dengan data user)
+  void _navigateToEditProfile() {
+    // Jika EditProfilePage sudah ada, uncomment baris bawah:
+    // Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfilePage(user: _user!)));
+
+    // ✅ Temporary: Show dialog untuk demo edit profile
+    _showEditProfileDialog();
+  }
+
+  // ✅ DIALOG: Edit Profile dengan API Call
+  void _showEditProfileDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: _user?.name);
+    final emailController = TextEditingController(text: _user?.email);
+    final passwordController = TextEditingController();
+    bool _isSubmitting = false;
+    showDialog(
+      context: context,
+      builder: (ctx) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(viewInsets: EdgeInsets.zero),
+        child: StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Edit Profil'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Input Nama
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Lengkap',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Nama wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Input Email
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      validator: (v) =>
+                          v?.isEmpty ?? true ? 'Email wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Input Password
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Password Baru (Opsional)',
+                        hintText: 'Kosongkan jika tidak diubah',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF243E8F),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: _isSubmitting
+                    ? null
+                    : () async {
+                        if (!_formKey.currentState!.validate()) return;
+
+                        setDialogState(() => _isSubmitting = true);
+
+                        try {
+                          final updatedUser = await _userService.updateProfile(
+                            name: nameController.text.trim(),
+                            email: emailController.text.trim(),
+                            password: passwordController.text.trim().isNotEmpty
+                                ? passwordController.text.trim()
+                                : null,
+                          );
+
+                          if (mounted) {
+                            setState(() => _user = updatedUser);
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Profil berhasil diperbarui'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content: Text('❌ Gagal: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted)
+                            setDialogState(() => _isSubmitting = false);
+                        }
+                      },
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Simpan'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    // showDialog(
+    //   context: context,
+    //   builder: (ctx) => StatefulBuilder(
+    //     builder: (context, setDialogState) => AlertDialog(
+
+    //     ),
+    //   ),
+    // );
+  }
+
+  // ✅ WHATSAPP: Buka chat langsung
+  void _openWhatsApp() async {
+    if (_user == null) return;
+
+    final message =
+        """
+Halo Admin SimpeDesa 👋
+
+Perkenalkan saya:
+Nama : ${_user!.name}
+Email : ${_user!.email}
+
+Saya membutuhkan bantuan terkait aplikasi SimpeDesa.
+Terima kasih.
+""";
+
+    final url =
+        'https://wa.me/$whatsappNumber?text=${Uri.encodeComponent(message)}';
+
+    final uri = Uri.parse(url);
+
+    if (await launchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('WhatsApp tidak dapat dibuka')),
+      );
     }
   }
 
@@ -116,9 +299,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (confirm != true) return;
 
     try {
-      // ✅ Logout via UserService
       await _userService.logout();
-
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -138,6 +319,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: bgGray,
       body: _isLoading
           ? _buildLoading()
@@ -147,7 +329,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 🔄 Loading State
   Widget _buildLoading() {
     return const Center(
       child: Column(
@@ -161,7 +342,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ❌ Not Logged In State
   Widget _buildNotLoggedIn() {
     return Center(
       child: Padding(
@@ -215,13 +395,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ✅ Main Profile Content
   Widget _buildProfileContent() {
     return CustomScrollView(
       slivers: [
-        // 🔹 Header dengan Gradient
+        // 🔹 Header Gradient
         SliverAppBar(
-          expandedHeight: 220,
+          expandedHeight: 240,
           floating: false,
           pinned: true,
           backgroundColor: primaryBlue,
@@ -240,11 +419,10 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // ✅ Avatar dengan Border Gold
                       Stack(
                         children: [
                           Container(
@@ -253,25 +431,24 @@ class _ProfilePageState extends State<ProfilePage> {
                               shape: BoxShape.circle,
                               border: Border.all(color: gold, width: 3),
                             ),
-                            // child: CircleAvatar(
-                            //   radius: 45,
-                            //   backgroundColor: Colors.white,
-                            //   backgroundImage: _user?.photoUrl != null
-                            //       ? NetworkImage(_user!.photoUrl!)
-                            //       : null,
-                            //   child: _user?.photoUrl == null
-                            //       ? Text(
-                            //           _getInitials(),
-                            //           style: const TextStyle(
-                            //             fontSize: 32,
-                            //             fontWeight: FontWeight.bold,
-                            //             color: primaryBlue,
-                            //           ),
-                            //         )
-                            //       : null,
-                            // ),
+                            child: CircleAvatar(
+                              radius: 45,
+                              backgroundColor: Colors.white,
+                              backgroundImage: _user?.photoUrl != null
+                                  ? NetworkImage(_user!.photoUrl!)
+                                  : null,
+                              child: _user?.photoUrl == null
+                                  ? Text(
+                                      _getInitials(),
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                        color: primaryBlue,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           ),
-                          // ✅ Edit Photo Badge
                           Positioned(
                             bottom: 0,
                             right: 0,
@@ -295,8 +472,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // ✅ User Info
                       Text(
                         _user?.name ?? 'Pengguna',
                         style: const TextStyle(
@@ -332,26 +507,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 _menuCard(
                   icon: Icons.person_outline,
                   title: 'Edit Profil',
-                  subtitle: 'Ubah nama, email, atau foto',
+                  subtitle: 'Ubah nama, email, atau password',
                   iconColor: primaryBlue,
-                  onTap: () {
-                    // Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfilePage()));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Fitur Edit Profil segera hadir!'),
-                      ),
-                    );
-                  },
-                ),
-                _menuCard(
-                  icon: Icons.security_outlined,
-                  title: 'Keamanan',
-                  subtitle: 'Ganti password & pengaturan privasi',
-                  iconColor: primaryBlue,
-                  onTap: () {},
+                  onTap: _navigateToEditProfile,
                 ),
 
-                const SizedBox(height: 20),
+                // ❌ Keamanan dihapus sesuai request
+                const SizedBox(height: 5),
 
                 // ✅ Report Section
                 _buildSectionTitle('Pengaduan'),
@@ -360,41 +522,25 @@ class _ProfilePageState extends State<ProfilePage> {
                   title: 'Riwayat Pengaduan',
                   subtitle: 'Lihat status laporan Anda',
                   iconColor: green,
-                  badge: '3', // Contoh: ada 3 pengaduan aktif
+                  badge: '3',
                   onTap: () {
                     // Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportHistoryPage()));
-                  },
-                ),
-                _menuCard(
-                  icon: Icons.add_circle_outline,
-                  title: 'Buat Pengaduan Baru',
-                  subtitle: 'Laporkan masalah di desa Anda',
-                  iconColor: gold,
-                  onTap: () {
-                    // Navigator.pushNamed(context, '/report');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Fitur Riwayat Pengaduan segera hadir!'),
+                      ),
+                    );
                   },
                 ),
 
-                const SizedBox(height: 20),
+                // ❌ "Buat Pengaduan Baru" dihapus sesuai request
+                const SizedBox(height: 5),
 
-                // ✅ Support Section
+                // ✅ Bantuan Section - WhatsApp Only
                 _buildSectionTitle('Bantuan'),
-                _menuCard(
-                  icon: Icons.help_outline,
-                  title: 'Pusat Bantuan',
-                  subtitle: 'FAQ & panduan penggunaan',
-                  iconColor: textGray,
-                  onTap: () {},
-                ),
-                _menuCard(
-                  icon: Icons.chat_bubble_outline,
-                  title: 'Hubungi Kami',
-                  subtitle: 'Kirim pesan ke admin',
-                  iconColor: textGray,
-                  onTap: () {},
-                ),
+                _buildWhatsAppWidget(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 5),
 
                 // ✅ Logout Button
                 SizedBox(
@@ -453,7 +599,94 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // 🎴 Menu Card Widget
+  // 💬 WhatsApp Info Widget
+  Widget _buildWhatsAppWidget() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _openWhatsApp,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // ✅ WhatsApp Icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF25D366).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.chat,
+                    color: Color(0xFF25D366),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                // ✅ Text Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Hubungi via WhatsApp',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Chat admin untuk bantuan cepat',
+                        style: TextStyle(fontSize: 13, color: textGray),
+                      ),
+                    ],
+                  ),
+                ),
+                // ✅ Badge "Online"
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF25D366),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Online',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 🎴 Menu Card Widget (Reusable)
   Widget _menuCard({
     required IconData icon,
     required String title,
@@ -484,7 +717,6 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // ✅ Icon Container
                 Container(
                   width: 48,
                   height: 48,
@@ -495,8 +727,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Icon(icon, color: iconColor, size: 24),
                 ),
                 const SizedBox(width: 14),
-
-                // ✅ Text Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -542,8 +772,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ],
                   ),
                 ),
-
-                // ✅ Arrow
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
@@ -557,7 +785,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ✅ Helper: Ambil Inisial Nama untuk Avatar
+  // ✅ Helper: Inisial Nama untuk Avatar
   String _getInitials() {
     if (_user == null) return '?';
     final names = _user!.name.split(' ');

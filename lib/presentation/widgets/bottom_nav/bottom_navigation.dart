@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:simpedesa/presentation/pages/profile_page.dart';
-import '../../presentation/pages/home_page.dart';
-import '../../presentation/pages/report_page.dart';
-import '../../presentation/pages/notification_page.dart';
+import 'package:simpedesa/presentation/pages/profile/profile_page.dart';
+import '../pages/home_page/home_page.dart';
+import '../pages/report/report_page.dart';
+import '../pages/notification/notification_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(BottomNavigationBarExampleApp());
