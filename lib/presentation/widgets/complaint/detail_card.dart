@@ -41,8 +41,8 @@ class ComplaintDetailCard extends StatelessWidget {
 
           ..._buildAllDynamicFields(content),
 
-          if (complaint.attachmentUrl != null &&
-              complaint.attachmentUrl!.isNotEmpty) ...[
+          if (complaint.attachment_url != null &&
+              complaint.attachment_url!.isNotEmpty) ...[
             const Divider(color: Colors.white10, height: 32),
             const Text(
               "BUKTI PENDUKUNG",
@@ -56,11 +56,12 @@ class ComplaintDetailCard extends StatelessWidget {
 
             // ✅ TAMBAHKAN GestureDetector di sini agar bisa diklik
             GestureDetector(
-              onTap: () => _showImagePreview(context, complaint.attachmentUrl!),
+              onTap: () =>
+                  _showImagePreview(context, complaint.attachment_url!),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  complaint.attachmentUrl!,
+                  complaint.attachment_url!,
                   width: double.infinity,
                   height: 200, // Beri tinggi agar seragam
                   fit: BoxFit.cover,
@@ -158,12 +159,12 @@ class ComplaintDetailCard extends StatelessWidget {
       if (value == null || value.toString().trim().isEmpty) return;
 
       // ✅ FILTER TAMBAHAN:
-      // Jangan render jika key mengandung kata 'bukti', 'pendukung', 'attachment', atau 'file'
+      // Jangan render jika key mengandung kata 'bukti', 'pendukung', 'attachment_url', atau 'file'
       // Ini agar nama file mentah dari hasil dekripsi tidak muncul sebagai teks.
       final lowerKey = key.toLowerCase();
       if (lowerKey.contains('bukti') ||
           lowerKey.contains('pendukung') ||
-          lowerKey.contains('attachment_path') ||
+          lowerKey.contains('attachment_url_path') ||
           lowerKey.contains('file')) {
         return;
       }

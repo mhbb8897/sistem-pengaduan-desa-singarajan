@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../data/models/notification_model.dart';
-
+import '../../../core/constants.dart';
 // ✅ Import Widget yang sudah dipisah
 import '../../widgets/complaint/info_card.dart';
 import '../../widgets/complaint/detail_card.dart';
@@ -107,8 +107,14 @@ class _ComplaintDetailPageState extends State<ComplaintDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Mengakses variabel _complaint dengan aman
     final isClosed = _complaint?.status.toLowerCase() == 'selesai';
+
+    // ✅ Ambil data bukti_pendukung dari JSON terenkripsi
+    final String? buktiString =
+        _complaint?.decryptedContent?['bukti_pendukung'];
+    final List<String> imageList = buktiString != null && buktiString.isNotEmpty
+        ? buktiString.split(', ')
+        : [];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -134,17 +140,123 @@ class _ComplaintDetailPageState extends State<ComplaintDetailPage> {
                         if (_complaint != null) ...[
                           ComplaintInfoCard(complaint: _complaint!),
                           const SizedBox(height: 20),
-                          ComplaintDetailCard(
-                            complaint: _complaint!,
-                            title: widget.complaintTitle,
+
+                          // --- AWAL BLOK DETAIL PENGADUAN ---
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 1. Detail Informasi Utama (Isi dari DetailCard)
+                                ComplaintDetailCard(
+                                  complaint: _complaint!,
+                                  title: widget.complaintTitle,
+                                ),
+
+                                // 2. Pembatas halus jika ada gambar
+                                if (imageList.isNotEmpty)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: Divider(height: 1),
+                                  ),
+
+                                // 3. Bagian Bukti Pendukung (Di dalam blok yang sama)
+                                if (imageList.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Row(
+                                          children: [
+                                            Icon(
+                                              Icons.image_outlined,
+                                              size: 18,
+                                              color: Color(0xFF243E8F),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              "BUKTI PENDUKUNG",
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF243E8F),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        SizedBox(
+                                          height:
+                                              100, // Ukuran disesuaikan agar compact dalam blok
+                                          child: ListView.builder(
+                                            scrollDirection: Axis.horizontal,
+                                            itemCount: imageList.length,
+                                            itemBuilder: (context, index) {
+                                              final fileName = imageList[index]
+                                                  .trim();
+                                              final imageUrl =
+                                                  "${AppConstants.baseImageUrl}$fileName";
+
+                                              return GestureDetector(
+                                                onTap: () =>
+                                                    _showFullImage(imageUrl),
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(
+                                                    right: 10,
+                                                  ),
+                                                  width: 100,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                    border: Border.all(
+                                                      color:
+                                                          Colors.grey.shade200,
+                                                    ),
+                                                    image: DecorationImage(
+                                                      image: NetworkImage(
+                                                        imageUrl,
+                                                      ),
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
+                          // --- AKHIR BLOK DETAIL PENGADUAN ---
                         ],
-                        const SizedBox(height: 24),
+
+                        const SizedBox(height: 32),
+                        // Bagian Percakapan Tetap di luar blok detail
                         const Text(
                           "PERCAKAPAN",
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -168,6 +280,26 @@ class _ComplaintDetailPageState extends State<ComplaintDetailPage> {
                       ),
               ],
             ),
+    );
+  }
+
+  // ✅ HELPER: Fungsi untuk melihat foto ukuran penuh
+  void _showFullImage(String url) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.network(url, fit: BoxFit.contain),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Tutup", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

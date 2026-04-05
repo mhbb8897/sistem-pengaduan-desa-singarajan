@@ -5,6 +5,8 @@ class AppConstants {
   // Physical Device: IP laptop Anda (misal: 192.168.1.100)
   static const String baseUrl = 'http://127.0.0.1:8000/api';
 
+  // Image
+  static const String baseImageUrl = 'http://127.0.0.1:8000/storage/record/';
   // ✅ Token expiration dalam detik (3 jam)
   static const int tokenExpirationSeconds = 3 * 60 * 60;
 

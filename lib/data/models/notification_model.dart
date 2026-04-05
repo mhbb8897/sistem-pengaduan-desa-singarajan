@@ -7,7 +7,7 @@ class NotificationModel {
   final String status; // 'diajukan', 'diproses', 'selesai'
   final String createdAt;
   final String? category;
-  final String? attachmentUrl;
+  final String? attachment_url;
 
   // ✅ Field Tambahan untuk Dynamic Content
   final String? location;
@@ -29,7 +29,7 @@ class NotificationModel {
     required this.status,
     required this.createdAt,
     this.category,
-    this.attachmentUrl,
+    this.attachment_url,
     this.location,
     this.staffName,
     this.incidentDate,
@@ -66,7 +66,7 @@ class NotificationModel {
       status: json['status'] ?? 'diajukan',
       createdAt: json['created_at'] ?? '',
       category: json['category'],
-      attachmentUrl: json['attachment_url'],
+      attachment_url: json['attachment_url'],
       isRead: json['is_read'] ?? false,
 
       // Mapping untuk kemudahan akses langsung

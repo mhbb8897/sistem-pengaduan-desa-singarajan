@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:simpedesa/core/constants.dart';
-import '../widgets/report/whatsapp_info.dart';
+import '../../widgets/report/whatsapp_info.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -131,72 +132,157 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    // ✅ 1. Validasi Form & File
+    if (!_formKey.currentState!.validate()) {
+      print('⚠️ [DEBUG] Form validation failed');
+      return;
+    }
+
     if (_files.isEmpty) {
       _showSnackBar("Mohon unggah minimal 1 foto bukti", Colors.orange);
+      print('⚠️ [DEBUG] No files attached');
       return;
+    }
+
+    print('🚀 [DEBUG] Starting submission...');
+    print('📋 [DEBUG] Title: ${_judul.text}');
+    print('📋 [DEBUG] Category: $_kategori');
+    print('📋 [DEBUG] Files count: ${_files.length}');
+    for (var i = 0; i < _files.length; i++) {
+      print('📄 [DEBUG] File #$i: ${_files[i].path.split('/').last}');
     }
 
     setState(() => _isLoading = true);
 
     try {
+      // ✅ 2. Siapkan Token & URL
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyAuthToken);
 
-      var uri = Uri.parse('${AppConstants.baseUrl}/complaints');
-      var request = http.MultipartRequest('POST', uri);
+      if (token == null || token.isEmpty) {
+        throw Exception('Token tidak ditemukan. Silakan login ulang.');
+      }
 
+      final uri = Uri.parse('${AppConstants.baseUrl}/complaints');
+      print('🌐 [DEBUG] Request URL: $uri');
+
+      // ✅ 3. Buat Multipart Request
+      final request = http.MultipartRequest('POST', uri);
+
+      // Headers
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
       });
+      print('🔐 [DEBUG] Token: Bearer ${token.substring(0, 10)}...');
 
-      request.fields['title'] = _judul.text;
+      // ✅ 4. Tambahkan Field Text
+      request.fields['title'] = _judul.text.trim();
       request.fields['category'] = _kategori;
-      request.fields['message'] = _deskripsi.text;
-      request.fields['lokasi'] = _lokasi.text;
+      request.fields['message'] = _deskripsi.text.trim();
+      request.fields['lokasi'] = _lokasi.text.trim();
 
+      print('📝 [DEBUG] Fields added: title, category, message, lokasi');
+
+      // ✅ 5. Tambahkan Field Dinamis (jika ada)
       _dynamicControllers.forEach((key, controller) {
-        final fields = kategoriFields[_kategori]!;
-        final index = int.parse(key.replaceFirst('field_', ''));
-        final apiKey = fields[index]['label']
-            .toString()
-            .toLowerCase()
-            .replaceAll(' ', '_');
-
         if (controller.text.isNotEmpty) {
-          request.fields[apiKey] = controller.text;
+          final fields = kategoriFields[_kategori]!;
+          final index = int.parse(key.replaceFirst('field_', ''));
+          final apiKey = fields[index]['label']
+              .toString()
+              .toLowerCase()
+              .replaceAll(' ', '_');
+          request.fields[apiKey] = controller.text.trim();
+          print('📝 [DEBUG] Dynamic field: $apiKey = ${controller.text}');
         }
       });
 
-      if (_files.isNotEmpty) {
-        for (var file in _files) {
-          request.files.add(
-            await http.MultipartFile.fromPath('attachment_path', file.path),
-          );
-        }
+      // ✅ 6. Tambahkan File (PENTING: Nama field harus konsisten)
+      // Gunakan 'attachments[]' agar Laravel menerima sebagai array
+      for (var i = 0; i < _files.length; i++) {
+        final file = _files[i];
+        final filename = file.path.split('/').last;
+
+        print(
+          '📎 [DEBUG] Adding file #$i: $filename (${await file.length()} bytes)',
+        );
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'attachments[]', // 👈 WAJIB: pakai [] untuk array di Laravel
+            file.path,
+            filename: filename,
+          ),
+        );
       }
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-      final responseData = json.decode(response.body);
+      // ✅ 7. Kirim Request dengan Timeout
+      print('📤 [DEBUG] Sending request...');
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 60), // Timeout 60 detik untuk upload file
+        onTimeout: () {
+          throw TimeoutException(
+            'Upload timeout. File terlalu besar atau koneksi lambat.',
+          );
+        },
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 [DEBUG] Response Status: ${response.statusCode}');
+      print('📥 [DEBUG] Response Body: ${response.body}');
+
+      // ✅ 8. Parse & Handle Response
+      dynamic responseData;
+      try {
+        responseData = json.decode(response.body);
+      } catch (e) {
+        print('⚠️ [DEBUG] Failed to parse JSON: ${response.body}');
+        responseData = {'raw': response.body};
+      }
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        print('✅ [DEBUG] Submission successful!');
+
         if (mounted) {
-          _showSnackBar("Pengaduan berhasil dikirim secara aman!", accentGreen);
+          _showSnackBar("Pengaduan berhasil dikirim!", Colors.green);
           _resetForm();
         }
       } else {
-        _showSnackBar(
-          "Gagal: ${responseData['message'] ?? 'Terjadi kesalahan'}",
-          Colors.red,
-        );
+        print('❌ [DEBUG] Submission failed: ${responseData['message']}');
+
+        if (mounted) {
+          _showSnackBar(
+            "Gagal: ${responseData['message'] ?? 'Terjadi kesalahan'}",
+            Colors.red,
+          );
+        }
       }
-    } catch (e) {
-      debugPrint("Error Submit: $e");
-      _showSnackBar("Koneksi gagal ke ${AppConstants.baseUrl}", Colors.red);
+    } catch (e, stackTrace) {
+      print('❌ [DEBUG] Exception: $e');
+      print('❌ [DEBUG] StackTrace: $stackTrace');
+
+      if (mounted) {
+        if (e is TimeoutException) {
+          _showSnackBar(
+            "Upload timeout. Periksa koneksi internet.",
+            Colors.red,
+          );
+        } else if (e.toString().contains('SocketException')) {
+          _showSnackBar("Tidak ada koneksi internet.", Colors.red);
+        } else {
+          _showSnackBar(
+            "Error: ${e.toString().replaceAll('Exception: ', '')}",
+            Colors.red,
+          );
+        }
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        print('🏁 [DEBUG] Submission finished, loading = false');
+        setState(() => _isLoading = false);
+      }
     }
   }
 

@@ -1,14 +1,14 @@
 // lib/presentation/pages/home_page.dart
 import 'package:flutter/material.dart';
-import '../../core/api_client.dart';
-import '../../data/services/post_service.dart';
-import '../../data/services/user_service.dart';
-import '../../data/services/auth_service.dart';
-import '../../data/models/post_model.dart';
-import '../../data/models/user_model.dart';
-import '../widgets/post_card.dart';
-import '../pages/login_page.dart';
-import '../pages/notification_page.dart';
+import '../../../core/api_client.dart';
+import '../../../data/services/post_service.dart';
+import '../../../data/services/user_service.dart';
+import '../../../data/services/auth_service.dart';
+import '../../../data/models/post_model.dart';
+import '../../../data/models/user_model.dart';
+import '../../widgets/post/post_card.dart';
+import '../login_and_register/login_page.dart';
+import '../notification/notification_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

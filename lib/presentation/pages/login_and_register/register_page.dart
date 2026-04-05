@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:simpedesa/core/constants.dart';
-import 'package:simpedesa/presentation/pages/login_page.dart';
+import 'package:simpedesa/presentation/pages/login_and_register/login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});

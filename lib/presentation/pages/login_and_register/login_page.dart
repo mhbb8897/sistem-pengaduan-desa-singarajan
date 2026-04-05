@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simpedesa/core/constants.dart';
 import 'package:simpedesa/data/models/user_model.dart';
 import 'package:simpedesa/data/services/user_service.dart';
-import 'package:simpedesa/presentation/widgets/bottom_navigation.dart';
-import 'package:simpedesa/presentation/pages/register_page.dart';
+import 'package:simpedesa/presentation/widgets/bottom_nav/bottom_navigation.dart';
+import 'package:simpedesa/presentation/pages/login_and_register/register_page.dart';
 // ✅ Pastikan constants diimport jika ingin pakai AppConstants, atau gunakan string literal konsisten
 // import '../../core/constants.dart';
 
