@@ -2,8 +2,6 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simpedesa/core/constants.dart';
-import 'package:http/http.dart' as http;
 
 class UserModel {
   final int id;

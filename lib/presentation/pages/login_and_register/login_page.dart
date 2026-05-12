@@ -75,6 +75,7 @@ class _LoginPageState extends State<LoginPage> {
         // 3. Extract User & Token
         final userData = data['data']['user'];
         final token = data['data']['access_token'];
+        final hmacKey = data['data']['hmac_key'];
         final expiresIn =
             data['data']['expires_in'] ?? 10800; // Default 3 jam jika null
 
@@ -83,7 +84,9 @@ class _LoginPageState extends State<LoginPage> {
 
         // 5. Simpan Token & Expiration (PENTING)
         await _saveAuthToken(token, expiresIn);
-
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('hmac_key', hmacKey);
+        print(prefs.getString('token'));
         // 6. Simpan User Data via UserService
         await UserService().setUser(user);
 
@@ -134,7 +137,7 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
 
     // Simpan token
-    await prefs.setString(_keyToken, token);
+    await prefs.setString(AppConstants.keyAuthToken, token);
     await prefs.setBool('is_logged_in', true);
 
     // ✅ Simpan waktu expired (Wajib untuk fitur auto-logout)

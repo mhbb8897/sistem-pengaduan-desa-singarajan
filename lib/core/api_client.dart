@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants.dart';
+import '../core/hmac_helper.dart';
 
 class ApiClient {
   // ✅ Singleton pattern
@@ -17,27 +18,32 @@ class ApiClient {
   }
 
   // ✅ Helper: Get headers dengan Authorization
-  Future<Map<String, String>> _getHeaders({bool requireAuth = true}) async {
-    final headers = {
+  Future<Map<String, String>> _getHeaders({String body = ''}) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString(AppConstants.keyAuthToken);
+
+    final hmacKey = prefs.getString('hmac_key');
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    final signature = generateHmacSignature(
+      timestamp: timestamp.toString(),
+      body: body,
+      secretKey: hmacKey ?? '',
+    );
+
+    print('🔐 [HMAC] BODY: $body');
+    print('🔐 [HMAC] TIMESTAMP: $timestamp');
+    print('🔐 [HMAC] SIGNATURE: $signature');
+
+    return {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+      'X-TIMESTAMP': timestamp.toString(),
+      'X-SIGNATURE': signature,
     };
-    if (requireAuth) {
-      final token = await _getToken();
-      if (token != null && token.isNotEmpty) {
-        // ✅ Trim token & format Bearer yang benar
-        headers['Authorization'] = 'Bearer ${token.trim()}';
-        print('🔐 [AUTH] Header: Bearer ${token.trim().substring(0, 10)}...');
-      }
-    }
-
-    if (requireAuth) {
-      final token = await _getToken();
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-    }
-    return headers;
   }
 
   // ✅ GET Request
