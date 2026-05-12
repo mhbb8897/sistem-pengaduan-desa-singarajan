@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers\Api; // ✅ Gunakan namespace Api
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -15,56 +16,75 @@ class AuthController extends Controller
      */
     public function login(Request $request): JsonResponse
     {
-        // 1️⃣ Validasi input
+        // Validasi input
         $request->validate([
             'email' => 'required|email|exists:users,email',
             'password' => 'required|min:6',
         ]);
 
-        // 2️⃣ Cari user
+        // Cari user
         $user = User::where('email', $request->email)->first();
 
-        // 3️⃣ Cek password & status user
+        // Cek password
         if (! $user || ! Hash::check($request->password, $user->password)) {
-            // ✅ Gunakan Response 401 (Unauthorized)
+
             return response()->json([
                 'success' => false,
                 'message' => 'Email atau password salah',
                 'errors' => [
-                    'email' => ['Kredensial yang diberikan tidak valid.'],
+                    'email' => [
+                        'Kredensial yang diberikan tidak valid.',
+                    ],
                 ],
             ], 401);
         }
 
-        // Optional: Cek jika user tidak aktif
-        if (isset($user->is_active) && ! $user->is_active) {
+        // Optional cek user aktif
+        if (
+            isset($user->is_active)
+            && ! $user->is_active
+        ) {
+
             return response()->json([
                 'success' => false,
-                'message' => 'Akun Anda tidak aktif. Hubungi administrator.',
-            ], 403); // 403 Forbidden
+                'message' => 'Akun Anda tidak aktif.',
+            ], 403);
         }
 
-        // 4️⃣ Hapus token lama (opsional, untuk keamanan)
-        // Mencegah satu user memiliki terlalu banyak token aktif
+        // Hapus token lama
         $user->tokens()->delete();
 
-        // 5️⃣ Buat token baru menggunakan Sanctum
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Generate HMAC key
+        $user->hmac_key = Str::random(64);
 
-        // 6️⃣ Response success dengan data user & token
+        $user->save();
+
+        // Generate token baru
+        $token = $user
+            ->createToken('mobile')
+            ->plainTextToken;
+
+        // Response success
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil',
+
             'data' => [
+
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $user->role ?? 'user', // Tambahkan role jika ada
+                    'role' => $user->role ?? 'user',
                 ],
+
                 'access_token' => $token,
+
                 'token_type' => 'Bearer',
-                'expires_in' => 3 * 60 * 60, // Sanctum token tidak expire kecuali di-set manual
+
+                'expires_in' => 3 * 60 * 60,
+
+                'hmac_key' => $user->hmac_key,
             ],
         ], 200);
     }
@@ -74,8 +94,10 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // Hapus token saat ini
-        $request->user()->currentAccessToken()->delete();
+        $request
+            ->user()
+            ->currentAccessToken()
+            ->delete();
 
         return response()->json([
             'success' => true,

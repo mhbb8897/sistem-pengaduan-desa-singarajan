@@ -26,13 +26,12 @@ Route::get('/debug-raw-complaints', [ComplaintController::class, 'debugRawData']
 // Route Bebas Akses (Tanpa Login)
 Route::get('/debug-decrypted-complaints', [ComplaintController::class, 'debugDecryptedData']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'hmac'])->group(function () {
     // ✅ Complaints
     Route::get('/complaint_data', [ComplaintController::class, 'index']); // List pengaduan user
     Route::post('/complaints', [ComplaintController::class, 'store']);    // Buat pengaduan baru
     Route::get('/complaints/{id}', [ComplaintController::class, 'show']); // Detail pengaduan
     Route::patch('/complaints/{id}/read', [ComplaintController::class, 'markAsRead']); // Tandai dibaca
-
     // ✅ Complaint Messages (Chat)
     Route::get('/complaints/{id}/messages', [ComplaintMessageController::class, 'index']); // List chat
     Route::post('/complaints/{id}/messages', [ComplaintMessageController::class, 'store']); // Kirim pesan
