@@ -8,7 +8,8 @@ use App\Http\Controllers\Api\UserController;
 use App\Models\EncryptController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/get-public-key', [EncryptController::class, 'getPublicKey']);
+// Route::get('/get-public-key', [EncryptController::class, 'getPublicKey']);
+// Login
 Route::post('/loginuser', [AuthController::class, 'login']);
 Route::get('/ping', function () {
     return response()->json([
@@ -26,7 +27,8 @@ Route::get('/debug-raw-complaints', [ComplaintController::class, 'debugRawData']
 // Route Bebas Akses (Tanpa Login)
 Route::get('/debug-decrypted-complaints', [ComplaintController::class, 'debugDecryptedData']);
 
-Route::middleware(['auth:sanctum', 'hmac'])->group(function () {
+Route::middleware(['auth:sanctum', 'hmac',
+])->group(function () {
     // ✅ Complaints
     Route::get('/complaint_data', [ComplaintController::class, 'index']); // List pengaduan user
     Route::post('/complaints', [ComplaintController::class, 'store']);    // Buat pengaduan baru
@@ -37,5 +39,6 @@ Route::middleware(['auth:sanctum', 'hmac'])->group(function () {
     Route::post('/complaints/{id}/messages', [ComplaintMessageController::class, 'store']); // Kirim pesan
     // Profile
     Route::post('/user/editprofile', [UserController::class, 'updateProfile']);
-
+    // Edit Complaint
+    Route::put('/pengaduan/{id}', [ComplaintController::class, 'update']);
 });

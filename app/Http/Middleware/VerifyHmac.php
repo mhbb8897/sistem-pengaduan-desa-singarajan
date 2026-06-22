@@ -35,7 +35,11 @@ class VerifyHmac
 
         $body = $request->getContent();
 
-        $payload = $timestamp.$body;
+        if ($request->isMethod('GET') || $request->hasFile('attachments')) {
+            $payload = $timestamp;
+        } else {
+            $payload = $timestamp.$request->getContent();
+        }
 
         $generatedSignature = hash_hmac(
             'sha256',
