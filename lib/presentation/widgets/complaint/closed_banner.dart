@@ -8,7 +8,10 @@ class ClosedBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-      color: Colors.red.shade50,
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border(top: BorderSide(color: Colors.red.shade100, width: 1)),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

@@ -2,8 +2,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simpedesa/core/hmac_helper.dart';
 import '../core/constants.dart';
-import '../core/hmac_helper.dart';
 
 class ApiClient {
   // ✅ Singleton pattern
@@ -12,38 +12,51 @@ class ApiClient {
   ApiClient._internal();
 
   // ✅ Helper: Get token dari storage
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(AppConstants.keyAuthToken);
-  }
+  // Future<String?> _getToken() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   return prefs.getString(AppConstants.keyAuthToken);
+  // }
 
   // ✅ Helper: Get headers dengan Authorization
-  Future<Map<String, String>> _getHeaders({String body = ''}) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final token = prefs.getString(AppConstants.keyAuthToken);
-
-    final hmacKey = prefs.getString('hmac_key');
-
-    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-    final signature = generateHmacSignature(
-      timestamp: timestamp.toString(),
-      body: body,
-      secretKey: hmacKey ?? '',
-    );
-
-    print('🔐 [HMAC] BODY: $body');
-    print('🔐 [HMAC] TIMESTAMP: $timestamp');
-    print('🔐 [HMAC] SIGNATURE: $signature');
-
-    return {
+  Future<Map<String, String>> _getHeaders({
+    String body = '',
+    bool requireAuth = true,
+  }) async {
+    final headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-      'X-TIMESTAMP': timestamp.toString(),
-      'X-SIGNATURE': signature,
     };
+
+    if (requireAuth) {
+      final prefs = await SharedPreferences.getInstance();
+
+      final token = prefs.getString(AppConstants.keyAuthToken);
+
+      final hmacKey = prefs.getString('hmac_key');
+
+      if (token != null && hmacKey != null) {
+        final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
+            .toString();
+
+        final signature = generateHmacSignature(
+          timestamp: timestamp,
+          body: body,
+          secretKey: hmacKey,
+        );
+
+        headers['Authorization'] = 'Bearer ${token.trim()}';
+
+        headers['X-TIMESTAMP'] = timestamp;
+
+        headers['X-SIGNATURE'] = signature;
+
+        print('🔐 [AUTH] Bearer: ${token.substring(0, 10)}...');
+        print('🔐 [HMAC] Timestamp: $timestamp');
+        print('🔐 [HMAC] Signature: $signature');
+      }
+    }
+
+    return headers;
   }
 
   // ✅ GET Request

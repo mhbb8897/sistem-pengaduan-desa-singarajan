@@ -18,23 +18,24 @@ class ComplaintDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent, // Background mengikuti parent (putih)
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "DETAIL PENGADUAN",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF243E8F), // Menggunakan warna biru tema
                   fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
               ),
-              const Icon(Icons.lock_open, color: Colors.green, size: 16),
+              Icon(Icons.lock_open, color: Colors.green, size: 16),
             ],
           ),
           const SizedBox(height: 20),
@@ -43,18 +44,16 @@ class ComplaintDetailCard extends StatelessWidget {
 
           if (complaint.attachment_url != null &&
               complaint.attachment_url!.isNotEmpty) ...[
-            const Divider(color: Colors.white10, height: 32),
+            Divider(color: Colors.grey.shade200, height: 32),
             const Text(
-              "BUKTI PENDUKUNG",
+              "BUKTI PENDUKUNG UTAMA",
               style: TextStyle(
-                color: Colors.grey,
-                fontSize: 10,
+                color: Color(0xFF243E8F),
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
-
-            // ✅ TAMBAHKAN GestureDetector di sini agar bisa diklik
             GestureDetector(
               onTap: () =>
                   _showImagePreview(context, complaint.attachment_url!),
@@ -63,32 +62,32 @@ class ComplaintDetailCard extends StatelessWidget {
                 child: Image.network(
                   complaint.attachment_url!,
                   width: double.infinity,
-                  height: 200, // Beri tinggi agar seragam
+                  height: 200,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
                       height: 200,
-                      color: Colors.white10,
+                      color: Colors.grey.shade100,
                       child: const Center(child: CircularProgressIndicator()),
                     );
                   },
                   errorBuilder: (context, error, stackTrace) => Container(
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white10,
+                      color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.broken_image, color: Colors.white24),
-                          SizedBox(height: 4),
+                          Icon(Icons.broken_image, color: Colors.grey.shade400),
+                          const SizedBox(height: 4),
                           Text(
                             "Gagal memuat gambar",
                             style: TextStyle(
-                              color: Colors.white24,
+                              color: Colors.grey.shade500,
                               fontSize: 10,
                             ),
                           ),
@@ -105,18 +104,16 @@ class ComplaintDetailCard extends StatelessWidget {
     );
   }
 
-  // ✅ Fungsi untuk memunculkan Preview Full Screen
   void _showImagePreview(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Klik di luar gambar untuk menutup
+      barrierDismissible: true,
       builder: (context) => Dialog(
         backgroundColor: Colors.black,
-        insetPadding: EdgeInsets.zero, // Biar full layar
+        insetPadding: EdgeInsets.zero,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // InteractiveViewer membuat gambar bisa di-zoom (cubit layar)
             InteractiveViewer(
               panEnabled: true,
               minScale: 0.5,
@@ -128,7 +125,6 @@ class ComplaintDetailCard extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
             ),
-            // Tombol Tutup di pojok kanan atas
             Positioned(
               top: 40,
               right: 20,
@@ -148,9 +144,9 @@ class ComplaintDetailCard extends StatelessWidget {
 
     if (content.isEmpty) {
       return [
-        const Text(
+        Text(
           "Data detail tidak tersedia",
-          style: TextStyle(color: Colors.white54),
+          style: TextStyle(color: Colors.grey.shade600),
         ),
       ];
     }
@@ -158,9 +154,6 @@ class ComplaintDetailCard extends StatelessWidget {
     content.forEach((key, value) {
       if (value == null || value.toString().trim().isEmpty) return;
 
-      // ✅ FILTER TAMBAHAN:
-      // Jangan render jika key mengandung kata 'bukti', 'pendukung', 'attachment_url', atau 'file'
-      // Ini agar nama file mentah dari hasil dekripsi tidak muncul sebagai teks.
       final lowerKey = key.toLowerCase();
       if (lowerKey.contains('bukti') ||
           lowerKey.contains('pendukung') ||
@@ -179,8 +172,8 @@ class ComplaintDetailCard extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.grey,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -193,13 +186,16 @@ class ComplaintDetailCard extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: const Color(
+                      0xFFF5F7FA,
+                    ), // Background abu-abu kebiruan terang
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
                   child: Text(
                     value.toString(),
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Colors.black87,
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -208,7 +204,7 @@ class ComplaintDetailCard extends StatelessWidget {
               else
                 Text(
                   value.toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  style: const TextStyle(color: Colors.black87, fontSize: 14),
                 ),
             ],
           ),

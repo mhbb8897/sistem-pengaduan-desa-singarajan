@@ -11,15 +11,15 @@ class StatusBadge extends StatelessWidget {
         ? Colors.green
         : status.toLowerCase() == 'diproses'
         ? Colors.orange
-        : Colors.grey;
+        : Colors.grey.shade600;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "STATUS",
           style: TextStyle(
-            color: Colors.grey,
+            color: Colors.grey.shade500,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
@@ -28,7 +28,7 @@ class StatusBadge extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withOpacity(0.15),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(

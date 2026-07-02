@@ -14,8 +14,16 @@ class ChatBubble extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isAdmin ? const Color(0xFF2C2C2C) : const Color(0xFFE67E22),
+        // Selaraskan dengan warna AppBar (Admin) dan warna Kirim (User)
+        color: isAdmin ? const Color(0xFF243E8F) : const Color(0xFFE67E22),
         borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,7 +31,7 @@ class ChatBubble extends StatelessWidget {
           Row(
             children: [
               Text(
-                message.senderName ?? (isAdmin ? "super_admin" : "USER"),
+                message.senderName ?? (isAdmin ? "Petugas" : "Anda"),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -32,9 +40,9 @@ class ChatBubble extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -56,7 +64,7 @@ class ChatBubble extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             message.formattedDate,
-            style: const TextStyle(color: Colors.white54, fontSize: 10),
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
           ),
         ],
       ),

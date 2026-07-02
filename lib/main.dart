@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
           }
 
           return snapshot.data!
-              ? const BottomNavigationBarExample()
+              ? const BottomNavigationBarExampleApp()
               : const LoginPage();
         },
       ),

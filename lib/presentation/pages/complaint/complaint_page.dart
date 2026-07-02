@@ -7,15 +7,17 @@ import 'package:simpedesa/core/constants.dart';
 import '../../widgets/report/whatsapp_info.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:simpedesa/core/hmac_helper.dart';
+import 'package:simpedesa/presentation/pages/complaint/mycomplaint_page.dart';
 
-class ReportPage extends StatefulWidget {
-  const ReportPage({super.key});
+class ComplaintPage extends StatefulWidget {
+  const ComplaintPage({super.key});
 
   @override
-  State<ReportPage> createState() => _ReportPageState();
+  State<ComplaintPage> createState() => _ComplaintPageState();
 }
 
-class _ReportPageState extends State<ReportPage> {
+class _ComplaintPageState extends State<ComplaintPage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -74,13 +76,13 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   void _updateDynamicControllers() {
-    setState(() {
-      _dynamicControllers.clear();
-      final fields = kategoriFields[_kategori] ?? [];
-      for (var i = 0; i < fields.length; i++) {
-        _dynamicControllers['field_$i'] = TextEditingController();
-      }
-    });
+    _dynamicControllers.clear();
+
+    final fields = kategoriFields[_kategori] ?? [];
+
+    for (var i = 0; i < fields.length; i++) {
+      _dynamicControllers['field_$i'] = TextEditingController();
+    }
   }
 
   Future<void> _pickImages() async {
@@ -158,7 +160,11 @@ class _ReportPageState extends State<ReportPage> {
       // ✅ 2. Siapkan Token & URL
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyAuthToken);
+      final hmacKey = prefs.getString('hmac_key');
 
+      if (hmacKey == null || hmacKey.isEmpty) {
+        throw Exception('HMAC key tidak ditemukan');
+      }
       if (token == null || token.isEmpty) {
         throw Exception('Token tidak ditemukan. Silakan login ulang.');
       }
@@ -169,10 +175,24 @@ class _ReportPageState extends State<ReportPage> {
       // ✅ 3. Buat Multipart Request
       final request = http.MultipartRequest('POST', uri);
 
-      // Headers
+      if (hmacKey == null || hmacKey.isEmpty) {
+        throw Exception('HMAC key tidak ditemukan');
+      }
+
+      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
+          .toString();
+
+      final signature = generateHmacSignature(
+        timestamp: timestamp,
+        body: '',
+        secretKey: hmacKey,
+      );
+
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'X-TIMESTAMP': timestamp,
+        'X-SIGNATURE': signature,
       });
       print('🔐 [DEBUG] Token: Bearer ${token.substring(0, 10)}...');
 
@@ -247,7 +267,15 @@ class _ReportPageState extends State<ReportPage> {
 
         if (mounted) {
           _showSnackBar("Pengaduan berhasil dikirim!", Colors.green);
-          _resetForm();
+
+          await Future.delayed(const Duration(milliseconds: 700));
+
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MyComplaintPage()),
+          );
         }
       } else {
         print('❌ [DEBUG] Submission failed: ${responseData['message']}');
@@ -499,8 +527,10 @@ class _ReportPageState extends State<ReportPage> {
             .map((s) => DropdownMenuItem(value: s, child: Text(s)))
             .toList(),
         onChanged: (val) {
-          setState(() => _kategori = val!);
-          _updateDynamicControllers();
+          setState(() {
+            _kategori = val!;
+            _updateDynamicControllers();
+          });
         },
       ),
     );

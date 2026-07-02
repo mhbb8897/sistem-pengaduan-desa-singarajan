@@ -34,10 +34,16 @@ class ChatInput extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: "Tulis balasan...",
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: const Color(
+                  0xFFF5F7FA,
+                ), // Selaras dengan background app
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade200),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,

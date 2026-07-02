@@ -1,34 +1,18 @@
 // lib/data/services/notification_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../models/notification_model.dart';
-import 'auth_service.dart';
+import '../../core/api_client.dart';
 
 class NotificationService {
   static const String _baseUrl = 'http://127.0.0.1:8000/api';
-  final _authService = AuthService();
-
-  // ✅ Get Headers dengan Token
-  Future<Map<String, String>> _getHeaders() async {
-    final token = await _authService.getToken();
-    return {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-  }
+  final _apiClient = ApiClient();
 
   // ✅ GET Complaints (dengan DEBUG LOG)
   Future<List<NotificationModel>> getComplaints() async {
     try {
       print('🔗 [NOTIF] Request: GET $_baseUrl/complaint_data');
 
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/complaint_data'),
-            headers: await _getHeaders(),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _apiClient.get('complaint_data');
 
       if (response.statusCode == 200) {
         try {
@@ -100,12 +84,7 @@ class NotificationService {
         '🔗 [CHAT] Request: GET $_baseUrl/complaints/$complaintId/messages',
       );
 
-      final response = await http
-          .get(
-            Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
-            headers: await _getHeaders(),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _apiClient.get('complaints/$complaintId/messages');
 
       print('📡 [CHAT] Status: ${response.statusCode}');
       print('📦 [CHAT] Raw Body: ${response.body}');
@@ -141,13 +120,10 @@ class NotificationService {
       );
       print('📤 [CHAT] Body: {"message": "$message"}');
 
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl/complaints/$complaintId/messages'),
-            headers: await _getHeaders(),
-            body: json.encode({'message': message}),
-          )
-          .timeout(const Duration(seconds: 15));
+      final response = await _apiClient.post(
+        'complaints/$complaintId/messages',
+        {'message': message},
+      );
 
       print('📡 [CHAT] Response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200 || response.statusCode == 201;
@@ -157,21 +133,21 @@ class NotificationService {
     }
   }
 
-  // ✅ Mark as Read
-  Future<bool> markAsRead(int complaintId) async {
-    try {
-      final response = await http
-          .patch(
-            Uri.parse('$_baseUrl/complaints/$complaintId/read'),
-            headers: await _getHeaders(),
-            body: json.encode({'is_read': true}),
-          )
-          .timeout(const Duration(seconds: 10));
+  // // ✅ Mark as Read
+  // Future<bool> markAsRead(int complaintId) async {
+  //   try {
+  //     final response = await http
+  //         .patch(
+  //           Uri.parse('$_baseUrl/complaints/$complaintId/read'),
+  //           headers: await _getHeaders(),
+  //           body: json.encode({'is_read': true}),
+  //         )
+  //         .timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
-    } catch (e) {
-      print('❌ [NOTIF] Mark Read Error: $e');
-      return false;
-    }
-  }
+  //     return response.statusCode == 200;
+  //   } catch (e) {
+  //     print('❌ [NOTIF] Mark Read Error: $e');
+  //     return false;
+  //   }
+  // }
 }

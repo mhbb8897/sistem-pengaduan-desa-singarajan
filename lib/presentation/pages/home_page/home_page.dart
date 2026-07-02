@@ -8,7 +8,7 @@ import '../../../data/models/post_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../widgets/post/post_card.dart';
 import '../login_and_register/login_page.dart';
-import '../notification/notification_page.dart';
+import '../complaint/mycomplaint_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
     if (mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const NotificationPage()),
+        MaterialPageRoute(builder: (_) => const MyComplaintPage()),
       );
     }
   }
@@ -296,69 +296,69 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ❌ Error State
-  Widget _buildErrorState(String error) {
-    return SliverFillRemaining(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 60, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Gagal memuat berita',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.length > 100 ? '${error.substring(0, 100)}...' : error,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadPosts,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF243E8F),
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildErrorState(String error) {
+  //   return SliverFillRemaining(
+  //     child: Center(
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(Icons.error_outline, size: 60, color: Colors.grey[400]),
+  //           const SizedBox(height: 16),
+  //           Text(
+  //             'Gagal memuat berita',
+  //             style: TextStyle(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.bold,
+  //               color: Colors.grey[700],
+  //             ),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             error.length > 100 ? '${error.substring(0, 100)}...' : error,
+  //             textAlign: TextAlign.center,
+  //             style: TextStyle(color: Colors.grey[500], fontSize: 12),
+  //           ),
+  //           const SizedBox(height: 24),
+  //           ElevatedButton.icon(
+  //             onPressed: _loadPosts,
+  //             icon: const Icon(Icons.refresh),
+  //             label: const Text('Coba Lagi'),
+  //             style: ElevatedButton.styleFrom(
+  //               backgroundColor: const Color(0xFF243E8F),
+  //               foregroundColor: Colors.white,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // 📭 Empty State
-  Widget _buildEmptyState() {
-    return SliverFillRemaining(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.newspaper, size: 60, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Belum ada berita',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Berita terbaru akan muncul di sini',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildEmptyState() {
+  //   return SliverFillRemaining(
+  //     child: Center(
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(Icons.newspaper, size: 60, color: Colors.grey[400]),
+  //           const SizedBox(height: 16),
+  //           Text(
+  //             'Belum ada berita',
+  //             style: TextStyle(
+  //               fontSize: 18,
+  //               fontWeight: FontWeight.bold,
+  //               color: Colors.grey[700],
+  //             ),
+  //           ),
+  //           const SizedBox(height: 8),
+  //           Text(
+  //             'Berita terbaru akan muncul di sini',
+  //             style: TextStyle(color: Colors.grey[500]),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }
