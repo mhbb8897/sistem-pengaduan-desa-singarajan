@@ -22,51 +22,78 @@ class ApiClient {
     String body = '',
     bool requireAuth = true,
   }) async {
-    final headers = {
+    final headers = <String, String>{
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
 
-    if (requireAuth) {
-      final prefs = await SharedPreferences.getInstance();
-
-      final token = prefs.getString(AppConstants.keyAuthToken);
-
-      final hmacKey = prefs.getString('hmac_key');
-
-      if (token != null && hmacKey != null) {
-        final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-            .toString();
-
-        final signature = generateHmacSignature(
-          timestamp: timestamp,
-          body: body,
-          secretKey: hmacKey,
-        );
-
-        headers['Authorization'] = 'Bearer ${token.trim()}';
-
-        headers['X-TIMESTAMP'] = timestamp;
-
-        headers['X-SIGNATURE'] = signature;
-
-        print('🔐 [AUTH] Bearer: ${token.substring(0, 10)}...');
-        print('🔐 [HMAC] Timestamp: $timestamp');
-        print('🔐 [HMAC] Signature: $signature');
-      }
+    if (!requireAuth) {
+      return headers;
     }
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString(AppConstants.keyAuthToken);
+    final hmacKey = prefs.getString('hmac_session_key');
+
+    print('========== STORAGE ==========');
+    print('TOKEN    : $token');
+    print('HMAC KEY : $hmacKey');
+    print('=============================');
+
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer ${token.trim()}';
+    }
+
+    if (hmacKey != null && hmacKey.isNotEmpty) {
+      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
+          .toString();
+
+      final signature = generateHmacSignature(
+        timestamp: timestamp,
+        body: body,
+        secretKey: hmacKey,
+      );
+
+      headers['X-TIMESTAMP'] = timestamp;
+      headers['X-SIGNATURE'] = signature;
+
+      print('========== HMAC ==========');
+      print('BODY      : $body');
+      print('PAYLOAD   : $timestamp$body');
+      print('SIGNATURE : $signature');
+      print('==========================');
+    }
+
+    print('========== HEADERS ==========');
+    print(headers);
+    print('=============================');
 
     return headers;
   }
 
   // ✅ GET Request
   Future<http.Response> get(String endpoint, {bool requireAuth = true}) async {
-    final response = await http
-        .get(
-          Uri.parse('${AppConstants.baseUrl}/$endpoint'),
-          headers: await _getHeaders(requireAuth: requireAuth),
-        )
-        .timeout(const Duration(seconds: 15));
+    final headers = await _getHeaders(requireAuth: requireAuth);
+
+    print(headers);
+
+    final response = await http.get(
+      Uri.parse('${AppConstants.baseUrl}/$endpoint'),
+      headers: headers,
+    );
+    // final response = await http
+    //     .get(
+    //       Uri.parse('${AppConstants.baseUrl}/$endpoint'),
+    //       headers: await _getHeaders(requireAuth: requireAuth),
+    //     )
+    //     .timeout(const Duration(seconds: 15));
+
+    print('========================');
+    print('URL      : ${response.request?.url}');
+    print('STATUS   : ${response.statusCode}');
+    print('HEADERS  : ${response.headers}');
+    print('========================');
 
     await _handleAuthError(response);
     return response;
@@ -78,13 +105,23 @@ class ApiClient {
     dynamic body, {
     bool requireAuth = true,
   }) async {
+    final encodedBody = jsonEncode(body);
     final response = await http
         .post(
           Uri.parse('${AppConstants.baseUrl}/$endpoint'),
-          headers: await _getHeaders(requireAuth: requireAuth),
-          body: jsonEncode(body),
+          headers: await _getHeaders(
+            body: encodedBody,
+            requireAuth: requireAuth,
+          ),
+          body: encodedBody,
         )
         .timeout(const Duration(seconds: 15));
+
+    print('========================');
+    print('URL      : ${response.request?.url}');
+    print('STATUS   : ${response.statusCode}');
+    print('HEADERS  : ${response.headers}');
+    print('========================');
 
     await _handleAuthError(response);
     return response;
@@ -96,13 +133,23 @@ class ApiClient {
     dynamic body, {
     bool requireAuth = true,
   }) async {
+    final encodedBody = jsonEncode(body);
     final response = await http
         .patch(
           Uri.parse('${AppConstants.baseUrl}/$endpoint'),
-          headers: await _getHeaders(requireAuth: requireAuth),
-          body: jsonEncode(body),
+          headers: await _getHeaders(
+            body: encodedBody,
+            requireAuth: requireAuth,
+          ),
+          body: encodedBody,
         )
         .timeout(const Duration(seconds: 15));
+
+    print('========================');
+    print('URL      : ${response.request?.url}');
+    print('STATUS   : ${response.statusCode}');
+    print('HEADERS  : ${response.headers}');
+    print('========================');
 
     await _handleAuthError(response);
     return response;

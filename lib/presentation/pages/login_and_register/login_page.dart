@@ -7,8 +7,7 @@ import 'package:simpedesa/data/models/user_model.dart';
 import 'package:simpedesa/data/services/user_service.dart';
 import 'package:simpedesa/presentation/widgets/bottom_nav/bottom_navigation.dart';
 import 'package:simpedesa/presentation/pages/login_and_register/register_page.dart';
-// ✅ Pastikan constants diimport jika ingin pakai AppConstants, atau gunakan string literal konsisten
-// import '../../core/constants.dart';
+import 'package:simpedesa/data/services/secure_storage_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -65,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
           .timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);
-
+      print(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         // 2. Validasi struktur response
         if (data['data'] == null || data['data']['user'] == null) {
@@ -75,25 +74,20 @@ class _LoginPageState extends State<LoginPage> {
         // 3. Extract User & Token
         final userData = data['data']['user'];
         final token = data['data']['access_token'];
-        final hmacKey = data['data']['hmac_key'];
+        final hmac_session_key = data['data']['hmac_session_key'];
         final expiresIn =
-            data['data']['expires_in'] ?? 10800; // Default 3 jam jika null
+            data['data']['expires_in'] ??
+            AppConstants.tokenExpirationSeconds; // Default 3 jam jika null
 
         // 4. Convert ke UserModel
         final user = UserModel.fromJson(userData);
 
         // 5. Simpan Token & Expiration (PENTING)
-        await _saveAuthToken(token, expiresIn);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('hmac_key', hmacKey);
-        print(prefs.getString('token'));
+        await _saveAuthToken(token, hmac_session_key, expiresIn);
+        await SecureStorageService.write('hmac_session_key', hmac_session_key);
+        // print(prefs.getString('token'));
         // 6. Simpan User Data via UserService
         await UserService().setUser(user);
-
-        // Debug log
-        print(
-          '✅ [LOGIN] Success: ${user.name} | Token: ${token.substring(0, 10)}...',
-        );
 
         // 7. Delay kecil untuk memastikan SharedPreferences tersimpan (mencegah race condition)
         await Future.delayed(const Duration(milliseconds: 200));
@@ -133,18 +127,22 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // ✅ Helper: Simpan Token + Expiration Time ke Local Storage
-  Future<void> _saveAuthToken(String token, int expiresIn) async {
+  Future<void> _saveAuthToken(
+    String token,
+    String hmacKey,
+    int expiresIn,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Simpan token
     await prefs.setString(AppConstants.keyAuthToken, token);
+    await prefs.setString(AppConstants.keyHmacSession, hmacKey);
     await prefs.setBool('is_logged_in', true);
 
-    // ✅ Simpan waktu expired (Wajib untuk fitur auto-logout)
     final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
     await prefs.setString(_keyExpiresAt, expiresAt.toIso8601String());
 
-    print('🔐 [STORAGE] Token saved. Expires at: $expiresAt');
+    print('TOKEN : ${prefs.getString(AppConstants.keyAuthToken)}');
+    print('HMAC  : ${prefs.getString(AppConstants.keyHmacSession)}');
   }
 
   // ✅ Helper: Tampilkan Error SnackBar

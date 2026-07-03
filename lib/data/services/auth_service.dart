@@ -22,11 +22,12 @@ class AuthService {
       if (data['success'] == true && data['data'] != null) {
         final userData = data['data']['user'];
         final token = data['data']['access_token'];
+        final hmacKey = data['data']['hmac_session_key'];
         final expiresIn =
             data['data']['expires_in'] ?? AppConstants.tokenExpirationSeconds;
 
         // ✅ Simpan token & user
-        await _saveToken(token, expiresIn);
+        await _saveToken(token, hmacKey, expiresIn);
         final user = UserModel.fromJson(userData);
         await _saveUser(user);
 
@@ -52,11 +53,23 @@ class AuthService {
   }
 
   // ✅ Simpan token + expiration time
-  Future<void> _saveToken(String token, int expiresInSeconds) async {
+  Future<void> _saveToken(
+    String token,
+    String hmacKey,
+    int expiresInSeconds,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.keyAuthToken, token);
 
-    // ✅ Gunakan parameter expiresInSeconds (bukan hardcoded)
+    await prefs.setString(AppConstants.keyAuthToken, token);
+    await prefs.setString('hmac_session_key', hmacKey);
+
+    print("SAVE TOKEN : ${prefs.getString(AppConstants.keyAuthToken)}");
+    print("SAVE HMAC  : ${prefs.getString('hmac_session_key')}");
+
+    await prefs.setString(AppConstants.keyHmacSession, hmacKey);
+
+    print("SAVE HMAC : ${prefs.getString(AppConstants.keyHmacSession)}");
+
     final expiresAt = DateTime.now().add(Duration(seconds: expiresInSeconds));
 
     await prefs.setString(

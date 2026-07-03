@@ -160,9 +160,9 @@ class _ComplaintPageState extends State<ComplaintPage> {
       // ✅ 2. Siapkan Token & URL
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyAuthToken);
-      final hmacKey = prefs.getString('hmac_key');
+      final hmac_session_key = prefs.getString('hmac_session_key');
 
-      if (hmacKey == null || hmacKey.isEmpty) {
+      if (hmac_session_key == null || hmac_session_key.isEmpty) {
         throw Exception('HMAC key tidak ditemukan');
       }
       if (token == null || token.isEmpty) {
@@ -175,7 +175,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
       // ✅ 3. Buat Multipart Request
       final request = http.MultipartRequest('POST', uri);
 
-      if (hmacKey == null || hmacKey.isEmpty) {
+      if (hmac_session_key == null || hmac_session_key.isEmpty) {
         throw Exception('HMAC key tidak ditemukan');
       }
 
@@ -185,7 +185,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
       final signature = generateHmacSignature(
         timestamp: timestamp,
         body: '',
-        secretKey: hmacKey,
+        secretKey: hmac_session_key,
       );
 
       request.headers.addAll({

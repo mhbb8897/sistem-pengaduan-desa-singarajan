@@ -14,4 +14,5 @@ class AppConstants {
   static const String keyAuthToken = 'auth_token';
   static const String keyUserData = 'user_data';
   static const String keyTokenExpiresAt = 'token_expires_at';
+  static const keyHmacSession = 'hmac_session_key';
 }
