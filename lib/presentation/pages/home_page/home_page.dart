@@ -142,30 +142,26 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
-                title: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  mainAxisSize: MainAxisSize
-                      .min, // WAJIB agar kolom tidak mengambil ruang sisa
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      _getGreeting(),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
+                title: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: '${_getGreeting()}\n',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                    const Text(
-                      'SimpeDesa Berita',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      const TextSpan(
+                        text: 'SimpeDesa Berita',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -209,6 +205,26 @@ class _HomePageState extends State<HomePage> {
                 builder: (context, snapshot) {
                   // ... (Logika Snapsot Tetap Sama)
                   final posts = snapshot.data ?? [];
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildShimmerLoading();
+                  }
+
+                  if (snapshot.hasError) {
+                    return SliverToBoxAdapter(
+                      child: Center(child: Text(snapshot.error.toString())),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text("Belum ada berita."),
+                        ),
+                      ),
+                    );
+                  }
                   return SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
                       return Padding(
@@ -294,71 +310,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // ❌ Error State
-  // Widget _buildErrorState(String error) {
-  //   return SliverFillRemaining(
-  //     child: Center(
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           Icon(Icons.error_outline, size: 60, color: Colors.grey[400]),
-  //           const SizedBox(height: 16),
-  //           Text(
-  //             'Gagal memuat berita',
-  //             style: TextStyle(
-  //               fontSize: 18,
-  //               fontWeight: FontWeight.bold,
-  //               color: Colors.grey[700],
-  //             ),
-  //           ),
-  //           const SizedBox(height: 8),
-  //           Text(
-  //             error.length > 100 ? '${error.substring(0, 100)}...' : error,
-  //             textAlign: TextAlign.center,
-  //             style: TextStyle(color: Colors.grey[500], fontSize: 12),
-  //           ),
-  //           const SizedBox(height: 24),
-  //           ElevatedButton.icon(
-  //             onPressed: _loadPosts,
-  //             icon: const Icon(Icons.refresh),
-  //             label: const Text('Coba Lagi'),
-  //             style: ElevatedButton.styleFrom(
-  //               backgroundColor: const Color(0xFF243E8F),
-  //               foregroundColor: Colors.white,
-  //             ),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // 📭 Empty State
-  // Widget _buildEmptyState() {
-  //   return SliverFillRemaining(
-  //     child: Center(
-  //       child: Column(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           Icon(Icons.newspaper, size: 60, color: Colors.grey[400]),
-  //           const SizedBox(height: 16),
-  //           Text(
-  //             'Belum ada berita',
-  //             style: TextStyle(
-  //               fontSize: 18,
-  //               fontWeight: FontWeight.bold,
-  //               color: Colors.grey[700],
-  //             ),
-  //           ),
-  //           const SizedBox(height: 8),
-  //           Text(
-  //             'Berita terbaru akan muncul di sini',
-  //             style: TextStyle(color: Colors.grey[500]),
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 }

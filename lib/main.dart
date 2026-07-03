@@ -33,9 +33,9 @@ class MyApp extends StatelessWidget {
     final userService = UserService();
     await userService.loadUser();
 
-    print(
-      '🚀 [Main] App started, user: ${userService.getCurrentUser()?.name ?? "null"}',
-    );
+    // print(
+    //   '🚀 [Main] App started, user: ${userService.getCurrentUser()?.name ?? "null"}',
+    // );
 
     runApp(const MyApp());
   }
