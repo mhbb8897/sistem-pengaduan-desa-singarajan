@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function ($table) {
-            $table->string('hmac_key')->nullable();
+            $table->string('hmac_session_key')->nullable();
         });
     }
 

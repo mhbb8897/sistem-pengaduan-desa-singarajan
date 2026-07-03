@@ -44,7 +44,7 @@ class VerifyHmac
         $generatedSignature = hash_hmac(
             'sha256',
             $payload,
-            $user->hmac_key
+            $user->hmac_session_key
         );
 
         if (! hash_equals($generatedSignature, $signature)) {

@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -50,15 +49,11 @@ class AuthController extends Controller
                 'message' => 'Akun Anda tidak aktif.',
             ], 403);
         }
-
         // Hapus token lama
         $user->tokens()->delete();
-
         // Generate HMAC key
-        $user->hmac_key = Str::random(64);
-
+        $user->hmac_session_key = bin2hex(random_bytes(32));
         $user->save();
-
         // Generate token baru
         $token = $user
             ->createToken('mobile')
@@ -77,14 +72,10 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'role' => $user->role ?? 'user',
                 ],
-
                 'access_token' => $token,
-
                 'token_type' => 'Bearer',
-
                 'expires_in' => 3 * 60 * 60,
-
-                'hmac_key' => $user->hmac_key,
+                'hmac_session_key' => $user->hmac_session_key,
             ],
         ], 200);
     }
@@ -94,10 +85,18 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request
-            ->user()
-            ->currentAccessToken()
-            ->delete();
+        // $request
+        //     ->user()
+        //     ->currentAccessToken()
+        //     ->delete();
+
+        $user = $request->user();
+
+        $user->hmac_session_key = null;
+
+        $user->save();
+
+        $user->currentAccessToken()->delete();
 
         return response()->json([
             'success' => true,
