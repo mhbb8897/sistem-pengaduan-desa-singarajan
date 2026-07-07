@@ -71,19 +71,39 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ✅ DIALOG: Edit Profile dengan API Call
+  // ✅ DIALOG: Edit Profile dengan API Call
   void _showEditProfileDialog() {
     final _formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: _user?.name);
     final emailController = TextEditingController(text: _user?.email);
-    final passwordController = TextEditingController();
+
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
     bool _isSubmitting = false;
+
+    // Variabel untuk fitur hide/show password
+    bool _obscureOld = true;
+    bool _obscureNew = true;
+    bool _obscureConfirm = true;
+
     showDialog(
       context: context,
       builder: (ctx) => MediaQuery(
         data: MediaQuery.of(context).copyWith(viewInsets: EdgeInsets.zero),
         child: StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: const Text('Edit Profil'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Edit Profil',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF243E8F),
+              ),
+            ),
             content: SingleChildScrollView(
               child: Form(
                 key: _formKey,
@@ -93,39 +113,162 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Input Nama
                     TextFormField(
                       controller: nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nama Lengkap',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.person_outline),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                       validator: (v) =>
                           v?.isEmpty ?? true ? 'Nama wajib diisi' : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     // Input Email
                     TextFormField(
                       controller: emailController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.email_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.email_outlined),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                       validator: (v) =>
                           v?.isEmpty ?? true ? 'Email wajib diisi' : null,
                     ),
-                    const SizedBox(height: 12),
 
-                    // Input Password
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child:
+                          Divider(), // Pemisah antara info umum dan zona password
+                    ),
+
+                    // Input Password Lama
                     TextFormField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password Baru (Opsional)',
-                        hintText: 'Kosongkan jika tidak diubah',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock_outline),
+                      controller: oldPasswordController,
+                      obscureText: _obscureOld,
+                      decoration: InputDecoration(
+                        labelText: 'Password Lama (Opsional)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureOld
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () =>
+                              setDialogState(() => _obscureOld = !_obscureOld),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Input Password Baru (Dengan Alert/Helper & Validasi)
+                    // Input Password Baru
+                    TextFormField(
+                      controller: newPasswordController,
+                      obscureText: _obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Password Baru',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.lock_reset),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureNew
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () =>
+                              setDialogState(() => _obscureNew = !_obscureNew),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+
+                        // UPDATE: Teks bantuan disesuaikan (tanpa simbol)
+                        helperText:
+                            'Minimal 8 karakter, wajib ada huruf besar, huruf kecil, dan angka.',
+                        helperMaxLines: 2,
+                        helperStyle: const TextStyle(
+                          color: Colors.blueGrey,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return null;
+
+                        // UPDATE: Regex disamakan persis dengan backend Laravel
+                        // (?=.*?[A-Z]) -> Minimal 1 huruf besar
+                        // (?=.*?[a-z]) -> Minimal 1 huruf kecil
+                        // (?=.*?[0-9]) -> Minimal 1 angka
+                        // .{8,}        -> Minimal 8 karakter
+                        RegExp regex = RegExp(
+                          r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9]).{8,}$',
+                        );
+                        if (!regex.hasMatch(v)) {
+                          return 'Format password belum sesuai syarat!';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Input Konfirmasi Password
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      obscureText: _obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Konfirmasi Password Baru',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirm
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () => setDialogState(
+                            () => _obscureConfirm = !_obscureConfirm,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (newPasswordController.text.isNotEmpty &&
+                            v != newPasswordController.text) {
+                          return 'Konfirmasi password tidak cocok';
+                        }
+                        return null;
+                      },
                     ),
                   ],
                 ),
@@ -134,51 +277,88 @@ class _ProfilePageState extends State<ProfilePage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Batal'),
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
-              ElevatedButton(
+             ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF243E8F),
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: _isSubmitting
                     ? null
                     : () async {
                         if (!_formKey.currentState!.validate()) return;
 
+                        if (newPasswordController.text.isNotEmpty &&
+                            oldPasswordController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Masukkan password lama untuk mengubah password!',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+
                         setDialogState(() => _isSubmitting = true);
+
+                        // PENTING: Simpan reference ScaffoldMessenger sebelum proses async dimulai
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
 
                         try {
                           final updatedUser = await _userService.updateProfile(
                             name: nameController.text.trim(),
                             email: emailController.text.trim(),
-                            password: passwordController.text.trim().isNotEmpty
-                                ? passwordController.text.trim()
-                                : null,
+                            currentPassword:
+                                oldPasswordController.text.trim().isEmpty
+                                ? null
+                                : oldPasswordController.text.trim(),
+                            password: newPasswordController.text.trim().isEmpty
+                                ? null
+                                : newPasswordController.text.trim(),
+                            passwordConfirmation:
+                                confirmPasswordController.text.trim().isEmpty
+                                ? null
+                                : confirmPasswordController.text.trim(),
                           );
 
                           if (mounted) {
                             setState(() => _user = updatedUser);
+
+                            // Tutup dialog terlebih dahulu
                             Navigator.pop(ctx);
-                            ScaffoldMessenger.of(this.context).showSnackBar(
+
+                            // Gunakan variabel yang sudah disimpan di awal untuk memunculkan snackbar
+                            scaffoldMessenger.showSnackBar(
                               const SnackBar(
                                 content: Text('✅ Profil berhasil diperbarui'),
                                 backgroundColor: Colors.green,
+                                duration: Duration(seconds: 3),
                               ),
                             );
                           }
                         } catch (e) {
                           if (mounted) {
-                            ScaffoldMessenger.of(this.context).showSnackBar(
+                            scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text('❌ Gagal: ${e.toString()}'),
                                 backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 4),
                               ),
                             );
                           }
                         } finally {
-                          if (mounted)
+                          if (mounted) {
                             setDialogState(() => _isSubmitting = false);
+                          }
                         }
                       },
                 child: _isSubmitting
@@ -191,20 +371,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       )
                     : const Text('Simpan'),
-              ),
+              )
             ],
           ),
         ),
       ),
     );
-    // showDialog(
-    //   context: context,
-    //   builder: (ctx) => StatefulBuilder(
-    //     builder: (context, setDialogState) => AlertDialog(
-
-    //     ),
-    //   ),
-    // );
   }
 
   // ✅ WHATSAPP: Buka chat langsung

@@ -63,29 +63,84 @@ class UserService {
     await SecureStorageService.delete(AppConstants.keyUserData);
   }
 
-  /// Tetap dipertahankan
+  /*
+  |--------------------------------------------------------------------------
+  | UPDATE PROFILE
+  |--------------------------------------------------------------------------
+  */
   Future<UserModel> updateProfile({
     required String name,
     required String email,
+    String? currentPassword,
     String? password,
+    String? passwordConfirmation,
   }) async {
-    final response = await _api.post('user/editprofile', {
-      'name': name,
-      'email': email,
-      if (password != null && password.isNotEmpty) 'password': password,
-    });
+    final body = <String, dynamic>{};
 
+    if (name.trim().isNotEmpty) {
+      body['name'] = name.trim();
+    }
+
+    if (email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+
+    if (currentPassword?.trim().isNotEmpty == true) {
+      body['current_password'] = currentPassword!.trim();
+    }
+
+    if (password?.trim().isNotEmpty == true) {
+      body['password'] = password!.trim();
+    }
+
+    if (passwordConfirmation?.trim().isNotEmpty == true) {
+      body['password_confirmation'] = passwordConfirmation!.trim();
+    }
+
+    final response = await _api.post('user/editprofile', body);
     final data = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      final updatedUser = UserModel.fromJson(data['data']);
+      // 1. Ambil data balasan dari server (hanya berisi id, name, email)
+      final responseData = data['data'] as Map<String, dynamic>;
 
-      // Update cache + Secure Storage
+      Map<String, dynamic> mergedJson;
+
+      // 2. Gabungkan data baru dengan data user yang lama agar photoUrl, token, dll tidak hilang
+      if (_currentUser != null) {
+        mergedJson = _currentUser!.toJson();
+        responseData.forEach((key, value) {
+          mergedJson[key] = value;
+        });
+      } else {
+        mergedJson = responseData;
+      }
+
+      // 3. Simpan data yang sudah digabung
+      final updatedUser = UserModel.fromJson(mergedJson);
       await setUser(updatedUser);
-
       return updatedUser;
     }
 
-    throw Exception(data['message'] ?? 'Gagal update profil');
+    // Penanganan Error Validasi dari Laravel
+    if (response.statusCode == 422) {
+      if (data['errors'] != null) {
+        final Map<String, dynamic> errors = data['errors'];
+        final List<String> messages = [];
+
+        errors.forEach((key, value) {
+          if (value is List) {
+            messages.addAll(value.map((e) => e.toString()));
+          }
+        });
+
+        throw Exception(messages.join('\n'));
+      }
+    }
+
+    // Penanganan Error Umum Server
+    throw Exception(
+      data['message'] ?? 'Terjadi kesalahan saat memperbarui profil',
+    );
   }
 }

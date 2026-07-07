@@ -39,9 +39,9 @@ class UserModel {
     };
   }
 
-  /// ✅ Helper: Simpan user ke cache
-  Future<void> _saveUserToCache(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_cache', jsonEncode(user.toJson()));
-  }
+  // /// ✅ Helper: Simpan user ke cache
+  // Future<void> _saveUserToCache(UserModel user) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('user_cache', jsonEncode(user.toJson()));
+  // }
 }

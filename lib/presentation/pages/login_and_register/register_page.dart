@@ -31,8 +31,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   // ✅ Fungsi Register Terintegrasi
+  // ✅ Fungsi Register Terintegrasi
   Future<void> register() async {
-    // Validasi form
+    // Validasi form lokal
     if (!_formKey.currentState!.validate()) return;
 
     if (passwordController.text != confirmPasswordController.text) {
@@ -73,11 +74,27 @@ class _RegisterPageState extends State<RegisterPage> {
             MaterialPageRoute(builder: (_) => const LoginPage()),
           );
         }
-      } else {
+      }
+      // ✅ TANGKAP ERROR VALIDASI DARI LARAVEL (422)
+      else if (response.statusCode == 422 && data['errors'] != null) {
+        final Map<String, dynamic> errors = data['errors'];
+        final List<String> errorMessages = [];
+
+        errors.forEach((key, value) {
+          if (value is List) {
+            errorMessages.addAll(value.map((e) => e.toString()));
+          }
+        });
+
+        // Tampilkan semua error yang digabung dengan baris baru
+        showError(errorMessages.join('\n'));
+      }
+      // ✅ TANGKAP ERROR UMUM LAINNYA
+      else {
         showError(data['message'] ?? 'Registrasi gagal. Silakan coba lagi.');
       }
     } catch (e) {
-      print('❌ [REGISTER ERROR] $e');
+      debugPrint('❌ [REGISTER ERROR] $e');
 
       if (e.toString().contains('TimeoutException')) {
         showError('Koneksi timeout. Periksa internet Anda.');
@@ -347,8 +364,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             if (value?.isEmpty ?? true) {
                               return 'Password wajib diisi';
                             }
-                            if (value!.length < 6) {
-                              return 'Password minimal 6 karakter';
+                            if (value!.length < 8) {
+                              // 👈 Ubah menjadi 8
+                              return 'Password minimal 8 karakter';
                             }
                             return null;
                           },
@@ -408,8 +426,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             if (value?.isEmpty ?? true) {
                               return 'Konfirmasi password wajib diisi';
                             }
-                            if (value!.length < 6) {
-                              return 'Password minimal 6 karakter';
+                            if (value!.length < 8) {
+                              // 👈 Ubah menjadi 8
+                              return 'Password minimal 8 karakter';
                             }
                             return null;
                           },

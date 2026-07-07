@@ -2,6 +2,7 @@ import 'dart:convert';
 
 class NotificationModel {
   final int id;
+  final String reporterName;
   final String title;
   final String message;
   final String status; // 'diajukan', 'diproses', 'selesai'
@@ -24,6 +25,7 @@ class NotificationModel {
 
   NotificationModel({
     required this.id,
+    required this.reporterName,
     required this.title,
     required this.message,
     required this.status,
@@ -61,6 +63,7 @@ class NotificationModel {
 
     return NotificationModel(
       id: json['id'] ?? 0,
+      reporterName: json['reporter_name'] ?? 'ERROR',
       title: json['title'] ?? 'Tanpa Judul',
       message: json['message'] ?? '',
       status: json['status'] ?? 'diajukan',
@@ -83,6 +86,7 @@ class NotificationModel {
   factory NotificationModel.fromMessageJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] ?? 0,
+      reporterName: '',
       title: '',
       message: json['message'] ?? '',
       status: 'message',

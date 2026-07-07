@@ -132,22 +132,4 @@ class NotificationService {
       return false;
     }
   }
-
-  // // ✅ Mark as Read
-  // Future<bool> markAsRead(int complaintId) async {
-  //   try {
-  //     final response = await http
-  //         .patch(
-  //           Uri.parse('$_baseUrl/complaints/$complaintId/read'),
-  //           headers: await _getHeaders(),
-  //           body: json.encode({'is_read': true}),
-  //         )
-  //         .timeout(const Duration(seconds: 10));
-
-  //     return response.statusCode == 200;
-  //   } catch (e) {
-  //     print('❌ [NOTIF] Mark Read Error: $e');
-  //     return false;
-  //   }
-  // }
 }
