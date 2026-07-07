@@ -93,6 +93,7 @@ class ComplaintController extends Controller
             ->map(function ($complaint) {
                 return [
                     'id' => $complaint->id,
+                    'reporter_name' => $complaint->user->name,
                     'title' => $complaint->title,
                     'status' => $complaint->status,
                     'category' => $complaint->category,
@@ -314,6 +315,31 @@ class ComplaintController extends Controller
         }
     }
 
+    public function debugDecryptedData(): JsonResponse
+    {
+        $complaints = Complaint::orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($complaint) {
+                return [
+                    'id' => $complaint->id,
+                    'title' => $complaint->title,
+                    'category' => $complaint->category,
+                    'raw_decrypted_json' => $complaint->decrypted_content,
+                    'status_dekripsi' => empty($complaint->decrypted_content) ? 'Gagal' : 'Berhasil',
+                    'created_at' => $complaint->created_at,
+                ];
+            });
+
+        // ✅ TAMBAHKAN RETURN DI SINI:
+        return response()->json([
+            'success' => true,
+            'message' => 'Data debug dekripsi berhasil diambil',
+            'count' => $complaints->count(),
+            'data' => $complaints,
+        ], 200);
+    }
+
     // public function update(Request $request, $id): JsonResponse
     // {
     //     $complaint = Complaint::findOrFail($id);
@@ -396,28 +422,4 @@ class ComplaintController extends Controller
     //     }
     // }
 
-    public function debugDecryptedData(): JsonResponse
-    {
-        $complaints = Complaint::orderBy('created_at', 'desc')
-            ->limit(50)
-            ->get()
-            ->map(function ($complaint) {
-                return [
-                    'id' => $complaint->id,
-                    'title' => $complaint->title,
-                    'category' => $complaint->category,
-                    'raw_decrypted_json' => $complaint->decrypted_content,
-                    'status_dekripsi' => empty($complaint->decrypted_content) ? 'Gagal' : 'Berhasil',
-                    'created_at' => $complaint->created_at,
-                ];
-            });
-
-        // ✅ TAMBAHKAN RETURN DI SINI:
-        return response()->json([
-            'success' => true,
-            'message' => 'Data debug dekripsi berhasil diambil',
-            'count' => $complaints->count(),
-            'data' => $complaints,
-        ], 200);
-    }
 }

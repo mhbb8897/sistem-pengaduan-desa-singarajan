@@ -21,8 +21,10 @@ Route::get('/ping', function () {
 // News API
 Route::get('/news', [NewsController::class, 'index']);
 Route::get('/news/{id}', [NewsController::class, 'show']);
-Route::post('/user/registeruser', [UserController::class, 'registerUser']);
 Route::post('/news', [NewsController::class, 'store']);
+// Register
+Route::post('/user/registeruser', [UserController::class, 'registerUser']);
+// Blok Testing
 Route::get('/debug-raw-complaints', [ComplaintController::class, 'debugRawData']);
 // Route Bebas Akses (Tanpa Login)
 Route::get('/debug-decrypted-complaints', [ComplaintController::class, 'debugDecryptedData']);
