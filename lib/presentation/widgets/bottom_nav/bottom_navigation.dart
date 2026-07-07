@@ -24,19 +24,9 @@ class _BottomNavigationBarExampleState
     extends State<BottomNavigationBarExampleApp> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _pages = const [
-      HomePage(),
-      NotificationPage(),
-      MyComplaintPage(),
-      ProfilePage(),
-    ];
-  }
+  // ✅ 1. Buat Key khusus untuk halaman MyComplaintPage
+  final GlobalKey<MyComplaintPageState> _complaintPageKey =
+      GlobalKey<MyComplaintPageState>();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -44,51 +34,85 @@ class _BottomNavigationBarExampleState
     });
   }
 
-  void _openCreateComplaint() {
-    Navigator.push(
+  // ✅ 2. Ubah fungsi ini menjadi async agar bisa menunggu hasil dari ComplaintPage
+  Future<void> _openCreateComplaint() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ComplaintPage()),
     );
+
+    if (!mounted) return;
+
+    if (result == true) {
+      setState(() {
+        _selectedIndex = 2;
+      });
+
+      await _complaintPageKey.currentState?.refreshData();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text("Pengaduan berhasil dikirim!"),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 5. Pindahkan list _pages ke dalam build() agar Key bisa ter-update secara dinamis
+    final List<Widget> pages = [
+      const HomePage(),
+      const NotificationPage(),
+      MyComplaintPage(key: _complaintPageKey), // Masukkan Key di sini!
+      const ProfilePage(),
+    ];
+
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(index: _selectedIndex, children: pages),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: _openCreateComplaint,
-        child: const Icon(Icons.add),
+        onPressed: _openCreateComplaint, // Panggil fungsi yang sudah diubah
+        backgroundColor: const Color(
+          0xFF243E8F,
+        ), // Sesuaikan dengan warna tema jika perlu
+        foregroundColor: Colors.white,
+        shape: const CircleBorder(), // Pastikan bentuknya bulat sempurna
+        child: const Icon(Icons.add, size: 28),
       ),
 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-
+        notchMargin: 8, // Memberi sedikit jarak elegan antara tombol dan navbar
         child: SizedBox(
           height: 65,
-
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-
             children: [
               _buildItem(icon: Icons.home_outlined, label: "Beranda", index: 0),
-
               _buildItem(
                 icon: Icons.assignment_outlined,
                 label: "Pengaduan",
                 index: 2,
               ),
-
-              const SizedBox(width: 40),
-
+              const SizedBox(width: 40), // Jarak tengah untuk tombol (+)
               _buildItem(
                 icon: Icons.notifications_none,
                 label: "Notifikasi",
                 index: 1,
               ),
-
               _buildItem(icon: Icons.person_outline, label: "Profil", index: 3),
             ],
           ),
@@ -103,24 +127,27 @@ class _BottomNavigationBarExampleState
     required int index,
   }) {
     final selected = _selectedIndex == index;
+    // Sesuaikan warna selected dengan tema SimpeDesa kamu (Primary Blue)
+    final Color activeColor = const Color(0xFF243E8F);
 
     return InkResponse(
       onTap: () => _onItemTapped(index),
       radius: 28,
       highlightShape: BoxShape.circle,
-      splashColor: Colors.deepPurple.withOpacity(0.2),
+      splashColor: activeColor.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.all(3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: selected ? Colors.deepPurple : Colors.grey),
+            Icon(icon, color: selected ? activeColor : Colors.grey),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.deepPurple : Colors.grey,
+                color: selected ? activeColor : Colors.grey,
                 fontSize: 12,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],

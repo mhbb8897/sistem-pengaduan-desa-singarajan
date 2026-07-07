@@ -8,7 +8,6 @@ import '../../widgets/report/whatsapp_info.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simpedesa/core/hmac_helper.dart';
-import 'package:simpedesa/presentation/pages/complaint/mycomplaint_page.dart';
 
 class ComplaintPage extends StatefulWidget {
   const ComplaintPage({super.key});
@@ -124,6 +123,8 @@ class _ComplaintPageState extends State<ComplaintPage> {
   }
 
   void _showSnackBar(String msg, Color color) {
+    if (!mounted) return; // ✅ Cegah error jika halaman sudah keburu ditutup
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -134,30 +135,25 @@ class _ComplaintPageState extends State<ComplaintPage> {
   }
 
   Future<void> _submit() async {
-    // ✅ 1. Validasi Form & File
-    if (!_formKey.currentState!.validate()) {
-      print('⚠️ [DEBUG] Form validation failed');
-      return;
-    }
+    // ✅ 1. TUTUP KEYBOARD DULU
+    if (_isLoading) return;
+
+    if (!_formKey.currentState!.validate()) return;
+    FocusManager.instance.primaryFocus?.unfocus();
 
     if (_files.isEmpty) {
       _showSnackBar("Mohon unggah minimal 1 foto bukti", Colors.orange);
-      print('⚠️ [DEBUG] No files attached');
       return;
     }
 
-    print('🚀 [DEBUG] Starting submission...');
-    print('📋 [DEBUG] Title: ${_judul.text}');
-    print('📋 [DEBUG] Category: $_kategori');
-    print('📋 [DEBUG] Files count: ${_files.length}');
-    for (var i = 0; i < _files.length; i++) {
-      print('📄 [DEBUG] File #$i: ${_files[i].path.split('/').last}');
-    }
-
     setState(() => _isLoading = true);
+    bool isSuccess = false; // Bendera penanda sukses
+
+    // ✅ 2. SIMPAN REFERENSI (Sangat penting agar tidak pakai context setelah await)
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    // final navigator = Navigator.of(context);
 
     try {
-      // ✅ 2. Siapkan Token & URL
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AppConstants.keyAuthToken);
       final hmac_session_key = prefs.getString('hmac_session_key');
@@ -170,18 +166,10 @@ class _ComplaintPageState extends State<ComplaintPage> {
       }
 
       final uri = Uri.parse('${AppConstants.baseUrl}/complaints');
-      print('🌐 [DEBUG] Request URL: $uri');
-
-      // ✅ 3. Buat Multipart Request
       final request = http.MultipartRequest('POST', uri);
-
-      if (hmac_session_key == null || hmac_session_key.isEmpty) {
-        throw Exception('HMAC key tidak ditemukan');
-      }
 
       final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
           .toString();
-
       final signature = generateHmacSignature(
         timestamp: timestamp,
         body: '',
@@ -194,17 +182,12 @@ class _ComplaintPageState extends State<ComplaintPage> {
         'X-TIMESTAMP': timestamp,
         'X-SIGNATURE': signature,
       });
-      print('🔐 [DEBUG] Token: Bearer ${token.substring(0, 10)}...');
 
-      // ✅ 4. Tambahkan Field Text
       request.fields['title'] = _judul.text.trim();
       request.fields['category'] = _kategori;
       request.fields['message'] = _deskripsi.text.trim();
       request.fields['lokasi'] = _lokasi.text.trim();
 
-      print('📝 [DEBUG] Fields added: title, category, message, lokasi');
-
-      // ✅ 5. Tambahkan Field Dinamis (jika ada)
       _dynamicControllers.forEach((key, controller) {
         if (controller.text.isNotEmpty) {
           final fields = kategoriFields[_kategori]!;
@@ -214,113 +197,73 @@ class _ComplaintPageState extends State<ComplaintPage> {
               .toLowerCase()
               .replaceAll(' ', '_');
           request.fields[apiKey] = controller.text.trim();
-          print('📝 [DEBUG] Dynamic field: $apiKey = ${controller.text}');
         }
       });
 
-      // ✅ 6. Tambahkan File (PENTING: Nama field harus konsisten)
-      // Gunakan 'attachments[]' agar Laravel menerima sebagai array
       for (var i = 0; i < _files.length; i++) {
         final file = _files[i];
-        final filename = file.path.split('/').last;
-
-        print(
-          '📎 [DEBUG] Adding file #$i: $filename (${await file.length()} bytes)',
-        );
-
         request.files.add(
           await http.MultipartFile.fromPath(
-            'attachments[]', // 👈 WAJIB: pakai [] untuk array di Laravel
+            'attachments[]',
             file.path,
-            filename: filename,
+            filename: file.path.split('/').last,
           ),
         );
       }
 
-      // ✅ 7. Kirim Request dengan Timeout
-      print('📤 [DEBUG] Sending request...');
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60), // Timeout 60 detik untuk upload file
-        onTimeout: () {
-          throw TimeoutException(
-            'Upload timeout. File terlalu besar atau koneksi lambat.',
-          );
-        },
+        const Duration(seconds: 60),
+        onTimeout: () => throw TimeoutException('Upload timeout.'),
       );
 
       final response = await http.Response.fromStream(streamedResponse);
-
-      print('📥 [DEBUG] Response Status: ${response.statusCode}');
-      print('📥 [DEBUG] Response Body: ${response.body}');
-
-      // ✅ 8. Parse & Handle Response
       dynamic responseData;
+
       try {
         responseData = json.decode(response.body);
       } catch (e) {
-        print('⚠️ [DEBUG] Failed to parse JSON: ${response.body}');
         responseData = {'raw': response.body};
       }
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        print('✅ [DEBUG] Submission successful!');
+        isSuccess = true;
 
-        if (mounted) {
-          _showSnackBar("Pengaduan berhasil dikirim!", Colors.green);
+        if (!mounted) return;
 
-          await Future.delayed(const Duration(milliseconds: 700));
-
-          if (!mounted) return;
-
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const MyComplaintPage()),
-          );
-        }
+        Navigator.pop(context, true);
+        return;
       } else {
-        print('❌ [DEBUG] Submission failed: ${responseData['message']}');
-
-        if (mounted) {
-          _showSnackBar(
-            "Gagal: ${responseData['message'] ?? 'Terjadi kesalahan'}",
-            Colors.red,
-          );
-        }
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              "Gagal: ${responseData['message'] ?? 'Terjadi kesalahan'}",
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
-    } catch (e, stackTrace) {
-      print('❌ [DEBUG] Exception: $e');
-      print('❌ [DEBUG] StackTrace: $stackTrace');
-
-      if (mounted) {
-        if (e is TimeoutException) {
-          _showSnackBar(
-            "Upload timeout. Periksa koneksi internet.",
-            Colors.red,
-          );
-        } else if (e.toString().contains('SocketException')) {
-          _showSnackBar("Tidak ada koneksi internet.", Colors.red);
-        } else {
-          _showSnackBar(
-            "Error: ${e.toString().replaceAll('Exception: ', '')}",
-            Colors.red,
-          );
-        }
+    } catch (e) {
+      String errorMsg = "Error: ${e.toString().replaceAll('Exception: ', '')}";
+      if (e is TimeoutException) {
+        errorMsg = "Upload timeout. Periksa koneksi internet.";
+      } else if (e.toString().contains('SocketException')) {
+        errorMsg = "Tidak ada koneksi internet.";
       }
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } finally {
-      if (mounted) {
-        print('🏁 [DEBUG] Submission finished, loading = false');
+      // ✅ 4. Cegah setState jika halaman sudah dihancurkan (sukses)
+      if (mounted && !isSuccess) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _resetForm() {
-    _formKey.currentState?.reset();
-    _judul.clear();
-    _lokasi.clear();
-    _deskripsi.clear();
-    setState(() => _files.clear());
-    _updateDynamicControllers();
   }
 
   @override
@@ -763,11 +706,12 @@ class _ComplaintPageState extends State<ComplaintPage> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _submit,
+        // ✅ PERBAIKAN 1: Jangan pernah gunakan 'null' di sini agar tidak memicu bug mouse_tracker
+        onPressed: _submit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryBlue, // ✅ Solid color, tanpa gradient
+          backgroundColor: primaryBlue,
           foregroundColor: Colors.white,
-          elevation: 3, // ✅ Shadow lebih halus
+          elevation: 3,
           shadowColor: primaryBlue.withOpacity(0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

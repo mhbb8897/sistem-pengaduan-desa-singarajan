@@ -8,14 +8,18 @@ class MyComplaintPage extends StatefulWidget {
   const MyComplaintPage({super.key});
 
   @override
-  State<MyComplaintPage> createState() => _MyComplaintPageState();
+  State<MyComplaintPage> createState() => MyComplaintPageState();
 }
 
-class _MyComplaintPageState extends State<MyComplaintPage> {
+class MyComplaintPageState extends State<MyComplaintPage> {
   final NotificationService _service = NotificationService();
+
   List<NotificationModel> _complaints = [];
+
   bool _isLoading = true;
+
   String? _errorMessage;
+
   String _selectedStatus = "Semua";
 
   // Warna Theme SimpeDesa
@@ -29,6 +33,10 @@ class _MyComplaintPageState extends State<MyComplaintPage> {
   void initState() {
     super.initState();
     _loadComplaints();
+  }
+
+  Future<void> refreshData() async {
+    await _loadComplaints();
   }
 
   Future<void> _loadComplaints() async {
