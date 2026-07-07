@@ -77,7 +77,7 @@ class UserController extends Controller
                 'email' => strtolower(trim($request->email)),
                 'password' => Hash::make($request->password),
             ]);
-
+            $user->assignRole('user');
             // 3. LOG SUKSES
             Log::info('REGISTER SUCCESS:', ['user_id' => $user->id, 'email' => $user->email]);
 
