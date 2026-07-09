@@ -29,7 +29,13 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandLogo('SimpeDesa')
             ->login()
+            ->brandName('SimpeDesa')
+            ->brandLogo(asset('images/logo-simpedesa.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/logo-simpedesa.png'))
+            ->font('Poppins')
             ->colors([
                 'primary' => Color::Amber,
             ])

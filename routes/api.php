@@ -29,7 +29,7 @@ Route::get('/debug-raw-complaints', [ComplaintController::class, 'debugRawData']
 // Route Bebas Akses (Tanpa Login)
 Route::get('/debug-decrypted-complaints', [ComplaintController::class, 'debugDecryptedData']);
 
-Route::middleware(['auth:sanctum', 'hmac',
+Route::middleware(['auth:sanctum', 'hmac', 'blocking.superadminaccess',
 ])->group(function () {
     // ✅ Complaints
     Route::get('/complaint_data', [ComplaintController::class, 'index']); // List pengaduan user

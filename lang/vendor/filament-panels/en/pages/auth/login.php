@@ -4,7 +4,7 @@ return [
 
     'title' => 'Login',
 
-    'heading' => 'Sign in',
+    'heading' => 'Login Administrator',
 
     'actions' => [
 
@@ -14,7 +14,7 @@ return [
         ],
 
         'request_password_reset' => [
-            'label' => 'Forgot password?',
+            'label' => 'Lupa Password?',
         ],
 
     ],
@@ -30,13 +30,13 @@ return [
         ],
 
         'remember' => [
-            'label' => 'Remember me',
+            'label' => 'Ingat Saya',
         ],
 
         'actions' => [
 
             'authenticate' => [
-                'label' => 'Sign in',
+                'label' => 'Masuk',
             ],
 
         ],
@@ -45,7 +45,7 @@ return [
 
     'messages' => [
 
-        'failed' => 'These credentials do not match our records.',
+        'failed' => 'Akun tidak ada, mohon hubungi administrator desa.',
 
     ],
 

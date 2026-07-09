@@ -16,7 +16,13 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+
+    protected static ?string $navigationLabel = 'Pengguna';
+
+    protected static ?string $pluralModelLabel = 'Daftar Pengguna';
+
+    protected static ?string $modelLabel = 'Pengguna';
 
     public static function form(Form $form): Form
     {
@@ -41,7 +47,7 @@ class UserResource extends Resource
                 TextColumn::make('roles.name')->label('Role')->badge()->separator(','),
                 TextColumn::make('created_at')->dateTime()])
 
-            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make(),])
+            ->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 

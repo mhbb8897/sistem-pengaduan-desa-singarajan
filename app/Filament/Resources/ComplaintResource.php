@@ -18,9 +18,20 @@ use Filament\Tables\Table;
 
 class ComplaintResource extends Resource
 {
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     protected static ?string $model = Complaint::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
+    protected static ?string $navigationLabel = 'Pengaduan';
+
+    protected static ?string $pluralModelLabel = 'Daftar Pengaduan';
+
+    protected static ?string $modelLabel = 'Pengaduan';
 
     public static function table(Table $table): Table
     {

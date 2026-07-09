@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsResource\Pages;
 use App\Models\News;
-use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\DeleteAction;
@@ -17,24 +19,30 @@ class NewsResource extends Resource
 {
     protected static ?string $model = News::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-newspaper';
+
+    protected static ?string $navigationLabel = 'Berita';
+
+    protected static ?string $pluralModelLabel = 'Daftar Berita';
+
+    protected static ?string $modelLabel = 'Berita';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
 
-                Forms\Components\TextInput::make('title')
+                TextInput::make('title')
                     ->label('Judul Berita')
                     ->required(),
 
-                Forms\Components\FileUpload::make('image')
+                FileUpload::make('image')
                     ->label('Gambar')
                     ->directory('news')
                     ->image()
                     ->imagePreviewHeight('150'),
 
-                Forms\Components\Textarea::make('content')
+                Textarea::make('content')
                     ->label('Isi Berita')
                     ->rows(6)
                     ->required(),

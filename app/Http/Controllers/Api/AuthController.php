@@ -38,17 +38,13 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Optional cek user aktif
-        if (
-            isset($user->is_active)
-            && ! $user->is_active
-        ) {
-
+        if ($user->hasRole('super_admin')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akun Anda tidak aktif.',
+                'message' => 'Silakan login melalui Panel Admin.',
             ], 403);
         }
+
         // Hapus token lama
         $user->tokens()->delete();
         // Generate HMAC key
@@ -85,17 +81,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        // $request
-        //     ->user()
-        //     ->currentAccessToken()
-        //     ->delete();
-
         $user = $request->user();
-
         $user->hmac_session_key = null;
-
         $user->save();
-
         $user->currentAccessToken()->delete();
 
         return response()->json([
