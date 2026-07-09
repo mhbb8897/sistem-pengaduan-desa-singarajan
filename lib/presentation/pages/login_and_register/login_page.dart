@@ -91,17 +91,20 @@ class _LoginPageState extends State<LoginPage> {
 
         // 7. Delay kecil untuk memastikan SharedPreferences tersimpan (mencegah race condition)
         await Future.delayed(const Duration(milliseconds: 200));
-
-        // 8. Navigasi ke Home
+        // 8. Navigasi ke Home dengan parameter justLoggedIn
+        // 8. Navigasi ke Home dengan parameter justLoggedIn
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => const BottomNavigationBarExampleApp(),
+              builder: (_) => const BottomNavigationBarExampleApp(
+                justLoggedIn: true, // Tambahkan parameter ini
+              ),
             ),
           );
         }
       } else {
+        // ✅ BENAR: Else ini sekarang milik if (response.statusCode == 200 ...)
         // Handle error dari backend (401, 422, dll)
         final message = data['message'] ?? 'Login gagal. Silakan coba lagi.';
         showError(message);

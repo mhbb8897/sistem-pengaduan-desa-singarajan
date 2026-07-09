@@ -8,7 +8,14 @@ import '../../pages/complaint/mycomplaint_page.dart';
 import '../../pages/profile/profile_page.dart';
 
 class BottomNavigationBarExampleApp extends StatefulWidget {
-  const BottomNavigationBarExampleApp({super.key});
+  // ✅ 1. Tambahkan parameter untuk mendeteksi apakah user baru saja login
+  final bool justLoggedIn;
+
+  const BottomNavigationBarExampleApp({
+    super.key,
+    this.justLoggedIn =
+        false, // Default false agar aman dipanggil dari mana saja
+  });
 
   Future<bool> checkLogin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -24,9 +31,33 @@ class _BottomNavigationBarExampleState
     extends State<BottomNavigationBarExampleApp> {
   int _selectedIndex = 0;
 
-  // ✅ 1. Buat Key khusus untuk halaman MyComplaintPage
   final GlobalKey<MyComplaintPageState> _complaintPageKey =
       GlobalKey<MyComplaintPageState>();
+
+  // ✅ 2. Tambahkan initState untuk memunculkan SnackBar jika justLoggedIn == true
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.justLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text("Login Berhasil! Selamat datang."),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -34,7 +65,6 @@ class _BottomNavigationBarExampleState
     });
   }
 
-  // ✅ 2. Ubah fungsi ini menjadi async agar bisa menunggu hasil dari ComplaintPage
   Future<void> _openCreateComplaint() async {
     final result = await Navigator.push(
       context,
@@ -70,32 +100,26 @@ class _BottomNavigationBarExampleState
 
   @override
   Widget build(BuildContext context) {
-    // ✅ 5. Pindahkan list _pages ke dalam build() agar Key bisa ter-update secara dinamis
     final List<Widget> pages = [
       const HomePage(),
       const NotificationPage(),
-      MyComplaintPage(key: _complaintPageKey), // Masukkan Key di sini!
+      MyComplaintPage(key: _complaintPageKey),
       const ProfilePage(),
     ];
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: pages),
-
       floatingActionButton: FloatingActionButton(
-        onPressed: _openCreateComplaint, // Panggil fungsi yang sudah diubah
-        backgroundColor: const Color(
-          0xFF243E8F,
-        ), // Sesuaikan dengan warna tema jika perlu
+        onPressed: _openCreateComplaint,
+        backgroundColor: const Color(0xFF243E8F),
         foregroundColor: Colors.white,
-        shape: const CircleBorder(), // Pastikan bentuknya bulat sempurna
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 28),
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-        notchMargin: 8, // Memberi sedikit jarak elegan antara tombol dan navbar
+        notchMargin: 8,
         child: SizedBox(
           height: 65,
           child: Row(
@@ -107,7 +131,7 @@ class _BottomNavigationBarExampleState
                 label: "Pengaduan",
                 index: 2,
               ),
-              const SizedBox(width: 40), // Jarak tengah untuk tombol (+)
+              const SizedBox(width: 40),
               _buildItem(
                 icon: Icons.notifications_none,
                 label: "Notifikasi",
@@ -127,7 +151,6 @@ class _BottomNavigationBarExampleState
     required int index,
   }) {
     final selected = _selectedIndex == index;
-    // Sesuaikan warna selected dengan tema SimpeDesa kamu (Primary Blue)
     final Color activeColor = const Color(0xFF243E8F);
 
     return InkResponse(

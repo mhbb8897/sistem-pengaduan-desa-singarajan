@@ -13,13 +13,9 @@ class MyComplaintPage extends StatefulWidget {
 
 class MyComplaintPageState extends State<MyComplaintPage> {
   final NotificationService _service = NotificationService();
-
   List<NotificationModel> _complaints = [];
-
   bool _isLoading = true;
-
   String? _errorMessage;
-
   String _selectedStatus = "Semua";
 
   // Warna Theme SimpeDesa
