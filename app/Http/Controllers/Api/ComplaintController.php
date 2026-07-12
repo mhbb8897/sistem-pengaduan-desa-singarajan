@@ -105,45 +105,6 @@ class ComplaintController extends Controller
         return response()->json(['success' => true, 'data' => $complaints]);
     }
 
-    // public function update(Request $request, Complaint $complaint): JsonResponse
-    // {
-    //     // Pastikan hanya pemilik yang dapat mengedit
-    //     if ($complaint->user_id != Auth::id()) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Anda tidak memiliki akses.',
-    //         ], 403);
-    //     }
-
-    //     // Hanya status diajukan yang boleh diedit
-    //     if ($complaint->status !== 'diajukan') {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Pengaduan yang sedang diproses atau selesai tidak dapat diubah.',
-    //         ], 403);
-    //     }
-
-    //     $validated = $request->validate([
-    //         'title' => 'required|string',
-    //         'category' => 'required|string',
-    //         'message' => 'required|string',
-    //         'lokasi' => 'required|string',
-    //     ]);
-
-    //     // proses enkripsi sama seperti method store()
-
-    //     $complaint->update([
-    //         'title' => $validated['title'],
-    //         'category' => $validated['category'],
-    //         'message' => $validated['message'],
-    //         'lokasi' => $validated['lokasi'],
-    //     ]);
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Pengaduan berhasil diperbarui.',
-    //     ]);
-    // }
     // // Edit Complaint
     public function update(Request $request, $id): JsonResponse
     {

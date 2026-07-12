@@ -35,12 +35,11 @@ Route::middleware(['auth:sanctum', 'hmac', 'blocking.superadminaccess',
     Route::get('/complaint_data', [ComplaintController::class, 'index']); // List pengaduan user
     Route::post('/complaints', [ComplaintController::class, 'store']);    // Buat pengaduan baru
     Route::get('/complaints/{id}', [ComplaintController::class, 'show']); // Detail pengaduan
-    Route::patch('/complaints/{id}/read', [ComplaintController::class, 'markAsRead']); // Tandai dibaca
     // ✅ Complaint Messages (Chat)
     Route::get('/complaints/{id}/messages', [ComplaintMessageController::class, 'index']); // List chat
     Route::post('/complaints/{id}/messages', [ComplaintMessageController::class, 'store']); // Kirim pesan
     // Profile
     Route::post('/user/editprofile', [UserController::class, 'updateProfile']);
     // Edit Complaint
-    Route::put('/pengaduan/{id}', [ComplaintController::class, 'update']);
+    Route::put('/complaints/{id}', [ComplaintController::class, 'update']);
 });
