@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/notification_model.dart';
+import '../../../data/models/complaint_model.dart';
 
 class ChatBubble extends StatelessWidget {
-  final NotificationModel message;
+  final ComplaintModel message;
 
   const ChatBubble({super.key, required this.message});
 

@@ -1,14 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/services/user_service.dart';
 import '../../../data/models/user_model.dart';
 import '../login_and_register/login_page.dart';
-// import '../pages/edit_profile_page.dart'; // Uncomment jika sudah ada
-// import '../pages/report_history_page.dart'; // Uncomment jika sudah ada
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -282,7 +276,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: TextStyle(color: Colors.grey),
                 ),
               ),
-             ElevatedButton(
+              ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF243E8F),
                   foregroundColor: Colors.white,
@@ -371,7 +365,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       )
                     : const Text('Simpan'),
-              )
+              ),
             ],
           ),
         ),

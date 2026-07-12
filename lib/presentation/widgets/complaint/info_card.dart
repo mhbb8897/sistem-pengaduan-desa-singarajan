@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/notification_model.dart';
+import '../../../data/models/complaint_model.dart';
 import 'status_badge.dart';
 
 class ComplaintInfoCard extends StatelessWidget {
-  final NotificationModel complaint;
+  final ComplaintModel complaint;
 
   const ComplaintInfoCard({super.key, required this.complaint});
 
@@ -80,15 +80,6 @@ class ComplaintInfoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "STATUS",
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
                     const SizedBox(height: 6),
                     StatusBadge(status: complaint.status),
                   ],

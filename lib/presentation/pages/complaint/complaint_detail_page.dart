@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../data/services/notification_service.dart';
-import '../../../data/models/notification_model.dart';
+import '../../../data/services/complaint_service.dart';
+import '../../../data/models/complaint_model.dart';
+import '../../../presentation/pages/complaint/complaint_page.dart';
+
 import '../../../core/constants.dart';
 // ✅ Import Widget yang sudah dipisah
 import '../../widgets/complaint/info_card.dart';
@@ -24,12 +26,12 @@ class ComplaintDetailPage extends StatefulWidget {
 }
 
 class _ComplaintDetailPageState extends State<ComplaintDetailPage> {
-  final _notifService = NotificationService();
+  final _notifService = ComplaintService();
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
 
-  NotificationModel? _complaint; // ✅ Variabel ini harus ada di sini
-  List<NotificationModel> _messages = [];
+  ComplaintModel? _complaint; // ✅ Variabel ini harus ada di sini
+  List<ComplaintModel> _messages = [];
   bool _isLoading = true;
   bool _isSending = false;
 
@@ -125,6 +127,36 @@ class _ComplaintDetailPageState extends State<ComplaintDetailPage> {
         ),
         backgroundColor: const Color(0xFF243E8F),
         foregroundColor: Colors.white,
+
+        actions: [
+          if (_complaint != null &&
+              _complaint!.status.toLowerCase() == "diajukan")
+            IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: "Edit Pengaduan",
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ComplaintPage(complaint: _complaint),
+                  ),
+                );
+
+                if (result == true) {
+                  await _loadAllData();
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Pengaduan berhasil diperbarui"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

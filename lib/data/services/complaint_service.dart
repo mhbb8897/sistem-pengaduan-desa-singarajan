@@ -1,14 +1,17 @@
 // lib/data/services/notification_service.dart
 import 'dart:convert';
-import '../models/notification_model.dart';
-import '../../core/api_client.dart';
+import 'package:flutter/material.dart';
 
-class NotificationService {
+import '../models/complaint_model.dart';
+import '../../core/api_client.dart';
+import 'dart:io';
+
+class ComplaintService {
   static const String _baseUrl = 'http://127.0.0.1:8000/api';
   final _apiClient = ApiClient();
 
   // ✅ GET Complaints (dengan DEBUG LOG)
-  Future<List<NotificationModel>> getComplaints() async {
+  Future<List<ComplaintModel>> getComplaints() async {
     try {
       print('🔗 [NOTIF] Request: GET $_baseUrl/complaint_data');
 
@@ -49,10 +52,10 @@ class NotificationService {
           print('🔄 [NOTIF] Parsing ${jsonList.length} items...');
 
           // Parse ke Model dengan error handling per item
-          final complaints = <NotificationModel>[];
+          final complaints = <ComplaintModel>[];
           for (var json in jsonList) {
             try {
-              complaints.add(NotificationModel.fromComplaintJson(json));
+              complaints.add(ComplaintModel.fromComplaintJson(json));
             } catch (e) {
               print('❌ [NOTIF] Gagal parse 1 item: $e');
             }
@@ -78,7 +81,7 @@ class NotificationService {
   }
 
   // ✅ GET Messages (Chat) - juga dengan debug
-  Future<List<NotificationModel>> getMessages(int complaintId) async {
+  Future<List<ComplaintModel>> getMessages(int complaintId) async {
     try {
       print(
         '🔗 [CHAT] Request: GET $_baseUrl/complaints/$complaintId/messages',
@@ -102,7 +105,7 @@ class NotificationService {
         }
 
         return jsonList
-            .map((json) => NotificationModel.fromMessageJson(json))
+            .map((json) => ComplaintModel.fromMessageJson(json))
             .toList();
       }
       return [];
@@ -129,6 +132,77 @@ class NotificationService {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print('❌ [CHAT] Send Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateComplaint({
+    required int complaintId,
+    required String title,
+    required String category,
+    required String message,
+    required String lokasi,
+    required Map<String, String> dynamicFields,
+    required List<File> attachments,
+  }) async {
+    final fields = <String, String>{
+      "_method": "PUT",
+
+      "title": title,
+
+      "category": category,
+
+      "message": message,
+
+      "lokasi": lokasi,
+
+      ...dynamicFields,
+    };
+
+    final response = await _apiClient.multipart(
+      "complaints/$complaintId",
+
+      fields: fields,
+
+      files: attachments,
+    );
+
+    return response.statusCode == 200;
+  }
+
+  Future<bool> createComplaint({
+    required String title,
+    required String category,
+    required String message,
+    required String lokasi,
+    required Map<String, String> dynamicFields,
+    required List<File> attachments,
+  }) async {
+    try {
+      final fields = <String, String>{
+        "title": title,
+
+        "category": category,
+
+        "message": message,
+
+        "lokasi": lokasi,
+
+        ...dynamicFields,
+      };
+
+      final response = await _apiClient.multipart(
+        "complaints",
+
+        fields: fields,
+
+        files: attachments,
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      debugPrint(e.toString());
+
       return false;
     }
   }

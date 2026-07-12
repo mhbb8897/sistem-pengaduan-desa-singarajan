@@ -1,29 +1,33 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:simpedesa/core/constants.dart';
+
+import 'package:simpedesa/data/models/complaint_model.dart';
 import '../../widgets/report/whatsapp_info.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simpedesa/core/hmac_helper.dart';
+import 'package:simpedesa/core/constants.dart';
+import 'package:simpedesa/data/services/complaint_service.dart';
 
 class ComplaintPage extends StatefulWidget {
-  const ComplaintPage({super.key});
+  final ComplaintModel? complaint;
 
+  const ComplaintPage({super.key, this.complaint});
+
+  bool get isEdit => complaint != null;
   @override
   State<ComplaintPage> createState() => _ComplaintPageState();
 }
 
 class _ComplaintPageState extends State<ComplaintPage> {
   final _formKey = GlobalKey<FormState>();
-
+  bool get isEdit => widget.isEdit;
   // Controllers
   final _judul = TextEditingController();
   final _lokasi = TextEditingController();
   final _deskripsi = TextEditingController();
   final Map<String, TextEditingController> _dynamicControllers = {};
+  final List<String> _existingImages = [];
 
   String _kategori = 'Fasilitas';
   bool _isLoading = false;
@@ -33,7 +37,6 @@ class _ComplaintPageState extends State<ComplaintPage> {
   // ✅ WARNA TEMA SimpeDesa (Sesuai Logo)
   static const Color primaryBlue = Color(0xFF243E8F);
   static const Color lightBlue = Color(0xFF4A90E2);
-  static const Color accentGreen = Color(0xFF5CB85C);
   static const Color accentGold = Color(0xFFD4AF37);
   static const Color bgGray = Color(0xFFF5F7FA);
   static const Color textDark = Color(0xFF2D3748);
@@ -71,7 +74,39 @@ class _ComplaintPageState extends State<ComplaintPage> {
   @override
   void initState() {
     super.initState();
+
+    if (isEdit) {
+      _judul.text = widget.complaint!.title;
+      _kategori = widget.complaint!.category!;
+      _lokasi.text = widget.complaint!.getDecryptedValue("lokasi");
+      _deskripsi.text = widget.complaint!.getDecryptedValue("deskripsi");
+      final bukti = widget.complaint!.getDecryptedValue(
+        "bukti_pendukung",
+        fallback: "",
+      );
+
+      if (bukti.isNotEmpty) {
+        _existingImages.addAll(
+          bukti.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty),
+        );
+      }
+    }
+
     _updateDynamicControllers();
+
+    if (isEdit) {
+      final data = widget.complaint!.decryptedContent;
+      final fields = kategoriFields[_kategori] ?? [];
+
+      for (int i = 0; i < fields.length; i++) {
+        final apiKey = fields[i]["label"].toString().toLowerCase().replaceAll(
+          " ",
+          "_",
+        );
+
+        _dynamicControllers["field_$i"]?.text = data[apiKey]?.toString() ?? "";
+      }
+    }
   }
 
   void _updateDynamicControllers() {
@@ -113,9 +148,13 @@ class _ComplaintPageState extends State<ComplaintPage> {
           continue;
         }
 
-        if (_files.length < 5) {
-          setState(() => _files.add(file));
+        if (_files.length >= 5) {
+          break;
         }
+
+        setState(() {
+          _files.add(file);
+        });
       }
     } catch (e) {
       _showSnackBar("Gagal mengambil foto", Colors.red);
@@ -135,133 +174,76 @@ class _ComplaintPageState extends State<ComplaintPage> {
   }
 
   Future<void> _submit() async {
-    // ✅ 1. TUTUP KEYBOARD DULU
-    if (_isLoading) return;
+    debugPrint("=== MASUK KE SUBMIT ===");
 
-    if (!_formKey.currentState!.validate()) return;
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    if (_files.isEmpty) {
-      _showSnackBar("Mohon unggah minimal 1 foto bukti", Colors.orange);
+    if (!_formKey.currentState!.validate()) {
+      debugPrint("VALIDASI FORM GAGAL");
       return;
     }
 
-    setState(() => _isLoading = true);
-    bool isSuccess = false; // Bendera penanda sukses
+    debugPrint("FILES = ${_files.length}");
+    debugPrint("EDIT = $isEdit");
+    setState(() {});
 
-    // ✅ 2. SIMPAN REFERENSI (Sangat penting agar tidak pakai context setelah await)
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    // final navigator = Navigator.of(context);
+    if (!isEdit && _files.isEmpty) {
+      debugPrint("FOTO MASIH KOSONG");
+
+      setState(() {});
+
+      return;
+    }
+
+    if (isEdit && _files.isEmpty && _existingImages.isEmpty) {
+      setState(() {});
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(AppConstants.keyAuthToken);
-      final hmac_session_key = prefs.getString('hmac_session_key');
+      bool success;
 
-      if (hmac_session_key == null || hmac_session_key.isEmpty) {
-        throw Exception('HMAC key tidak ditemukan');
-      }
-      if (token == null || token.isEmpty) {
-        throw Exception('Token tidak ditemukan. Silakan login ulang.');
-      }
-
-      final uri = Uri.parse('${AppConstants.baseUrl}/complaints');
-      final request = http.MultipartRequest('POST', uri);
-
-      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
-          .toString();
-      final signature = generateHmacSignature(
-        timestamp: timestamp,
-        body: '',
-        secretKey: hmac_session_key,
-      );
-
-      request.headers.addAll({
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'X-TIMESTAMP': timestamp,
-        'X-SIGNATURE': signature,
-      });
-
-      request.fields['title'] = _judul.text.trim();
-      request.fields['category'] = _kategori;
-      request.fields['message'] = _deskripsi.text.trim();
-      request.fields['lokasi'] = _lokasi.text.trim();
-
-      _dynamicControllers.forEach((key, controller) {
-        if (controller.text.isNotEmpty) {
-          final fields = kategoriFields[_kategori]!;
-          final index = int.parse(key.replaceFirst('field_', ''));
-          final apiKey = fields[index]['label']
-              .toString()
-              .toLowerCase()
-              .replaceAll(' ', '_');
-          request.fields[apiKey] = controller.text.trim();
-        }
-      });
-
-      for (var i = 0; i < _files.length; i++) {
-        final file = _files[i];
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'attachments[]',
-            file.path,
-            filename: file.path.split('/').last,
-          ),
-        );
-      }
-
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60),
-        onTimeout: () => throw TimeoutException('Upload timeout.'),
-      );
-
-      final response = await http.Response.fromStream(streamedResponse);
-      dynamic responseData;
-
-      try {
-        responseData = json.decode(response.body);
-      } catch (e) {
-        responseData = {'raw': response.body};
-      }
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        isSuccess = true;
-
-        if (!mounted) return;
-
-        Navigator.pop(context, true);
-        return;
+      if (isEdit) {
+        success = await _updateComplaint();
       } else {
-        scaffoldMessenger.showSnackBar(
+        success = await _createComplaint();
+      }
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Gagal: ${responseData['message'] ?? 'Terjadi kesalahan'}",
+              isEdit
+                  ? "Pengaduan berhasil diperbarui."
+                  : "Pengaduan berhasil dikirim.",
             ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
+
+            backgroundColor: Colors.green,
           ),
         );
-      }
-    } catch (e) {
-      String errorMsg = "Error: ${e.toString().replaceAll('Exception: ', '')}";
-      if (e is TimeoutException) {
-        errorMsg = "Upload timeout. Periksa koneksi internet.";
-      } else if (e.toString().contains('SocketException')) {
-        errorMsg = "Tidak ada koneksi internet.";
-      }
 
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text(errorMsg),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+        Navigator.pop(context, true);
+      } else {
+        throw Exception("Operasi gagal");
+      }
+    } catch (e, s) {
+      debugPrint(e.toString());
+
+      debugPrint(s.toString());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
     } finally {
-      // ✅ 4. Cegah setState jika halaman sudah dihancurkan (sukses)
-      if (mounted && !isSuccess) {
-        setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -276,9 +258,12 @@ class _ComplaintPageState extends State<ComplaintPage> {
           children: [
             Icon(Icons.report_problem, color: primaryBlue, size: 24),
             SizedBox(width: 8),
-            const Text(
-              "Ajukan Pengaduan",
-              style: TextStyle(fontWeight: FontWeight.bold, color: primaryBlue),
+            Text(
+              isEdit ? "Edit Pengaduan" : "Ajukan Pengaduan",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: primaryBlue,
+              ),
             ),
           ],
         ),
@@ -608,8 +593,8 @@ class _ComplaintPageState extends State<ComplaintPage> {
           child: Row(
             children: [
               Icon(Icons.info_outline, color: accentGold, size: 20),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text(
                   "Unggah maksimal 5 foto (JPG/PNG, maks 5MB)",
                   style: TextStyle(color: textDark, fontSize: 13),
@@ -621,32 +606,52 @@ class _ComplaintPageState extends State<ComplaintPage> {
 
         const SizedBox(height: 16),
 
-        // Photo preview
-        if (_files.isNotEmpty)
+        // ======================
+        // Preview gambar lama
+        // ======================
+        // ======================
+        // Preview gambar lama (Existing Images)
+        // ======================
+        if (_existingImages
+            .isNotEmpty) // Hapus "&& _files.isEmpty" agar tidak bentrok
           SizedBox(
             height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: _files.length,
+              itemCount: _existingImages.length,
               itemBuilder: (context, i) => Stack(
                 children: [
-                  Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: primaryBlue.withOpacity(0.3)),
-                      image: DecorationImage(
-                        image: FileImage(_files[i]),
-                        fit: BoxFit.cover,
+                  GestureDetector(
+                    // Tambahkan aksi klik untuk melihat gambar
+                    onTap: () => _showImageDialog(
+                      "${AppConstants.baseImageUrl}${_existingImages[i]}",
+                      false,
+                    ),
+                    child: Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: primaryBlue.withOpacity(0.3)),
+                        image: DecorationImage(
+                          image: NetworkImage(
+                            "${AppConstants.baseImageUrl}${_existingImages[i]}",
+                          ),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
                   Positioned(
+                    // Tombol "X" untuk gambar lama
                     top: 5,
                     right: 15,
                     child: GestureDetector(
-                      onTap: () => setState(() => _files.removeAt(i)),
+                      onTap: () {
+                        setState(() {
+                          _existingImages.removeAt(i);
+                        });
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -666,58 +671,137 @@ class _ComplaintPageState extends State<ComplaintPage> {
             ),
           ),
 
-        if (_files.isNotEmpty) const SizedBox(height: 16),
+        if (_existingImages.isNotEmpty) const SizedBox(height: 16),
 
-        // Upload button
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _files.length >= 5 ? null : _pickImages,
-            icon: Icon(
-              Icons.add_a_photo_outlined,
-              color: _files.length >= 5 ? textGray : primaryBlue,
-            ),
-            label: Text(
-              _files.isEmpty
-                  ? "Ambil Foto Bukti"
-                  : "Tambah Foto (${_files.length}/5)",
-              style: TextStyle(
-                color: _files.length >= 5 ? textGray : primaryBlue,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              side: BorderSide(
-                color: _files.length >= 5 ? textGray : primaryBlue,
+        // ======================
+        // Preview gambar baru (Files)
+        // ======================
+        if (_files.isNotEmpty)
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _files.length,
+              itemBuilder: (context, i) => Stack(
+                children: [
+                  GestureDetector(
+                    // Tambahkan aksi klik untuk melihat gambar
+                    onTap: () => _showImageDialog(_files[i], true),
+                    child: Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: primaryBlue.withOpacity(0.3)),
+                        image: DecorationImage(
+                          image: FileImage(_files[i]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    // Tombol "X" untuk gambar baru
+                    top: 5,
+                    right: 15,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _files.removeAt(i);
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+
+        if (_existingImages.isNotEmpty || _files.isNotEmpty)
+          const SizedBox(height: 16),
+
+        // Upload Button
+        FormField<List<File>>(
+          validator: (_) {
+            if (!isEdit && _files.isEmpty) {
+              return "Bukti foto wajib disertakan.";
+            }
+
+            if (isEdit && _files.isEmpty && _existingImages.isEmpty) {
+              return "Bukti foto wajib disertakan.";
+            }
+
+            return null;
+          },
+          builder: (field) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // PERBAIKAN DI SINI
+                SizedBox(
+                  width: double
+                      .infinity, // Hapus ini jika tombol tidak ingin sepanjang layar
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await _pickImages();
+                      field.didChange(_files);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(
+                        color: field.hasError ? Colors.red : primaryBlue,
+                        width: 1.5, // Ketebalan border
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          12,
+                        ), // Mengikuti radius awal
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(
+                      _files.isEmpty
+                          ? "Ambil Foto Bukti"
+                          : "Tambah Foto (${_files.length}/5)",
+                    ),
+                  ),
+                ),
+
+                if (field.hasError)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 12),
+                    child: Text(
+                      field.errorText!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );
   }
 
   Widget _buildSubmitButton() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        // ✅ PERBAIKAN 1: Jangan pernah gunakan 'null' di sini agar tidak memicu bug mouse_tracker
         onPressed: _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primaryBlue,
-          foregroundColor: Colors.white,
-          elevation: 3,
-          shadowColor: primaryBlue.withOpacity(0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
+        style: OutlinedButton.styleFrom(side: BorderSide.none),
         child: _isLoading
             ? const SizedBox(
                 width: 24,
@@ -727,14 +811,14 @@ class _ComplaintPageState extends State<ComplaintPage> {
                   strokeWidth: 2.5,
                 ),
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.send, size: 20),
-                  SizedBox(width: 8),
+                  const Icon(Icons.send, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    "KIRIM PENGADUAN",
-                    style: TextStyle(
+                    isEdit ? "SIMPAN PERUBAHAN" : "KIRIM PENGADUAN",
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
@@ -753,5 +837,117 @@ class _ComplaintPageState extends State<ComplaintPage> {
     _deskripsi.dispose();
     _dynamicControllers.forEach((_, controller) => controller.dispose());
     super.dispose();
+  }
+
+  Future<bool> _createComplaint() async {
+    final dynamicFields = _prepareDynamicFields();
+
+    _printDebug(isEdit: false, dynamicFields: dynamicFields);
+
+    return await ComplaintService().createComplaint(
+      title: _judul.text.trim(),
+
+      category: _kategori,
+
+      message: _deskripsi.text.trim(),
+
+      lokasi: _lokasi.text.trim(),
+
+      dynamicFields: dynamicFields,
+
+      attachments: _files,
+    );
+  }
+
+  Future<bool> _updateComplaint() async {
+    final dynamicFields = _prepareDynamicFields();
+
+    _printDebug(isEdit: true, dynamicFields: dynamicFields);
+
+    return await ComplaintService().updateComplaint(
+      complaintId: widget.complaint!.id,
+      title: _judul.text.trim(),
+      category: _kategori,
+      message: _deskripsi.text.trim(),
+      lokasi: _lokasi.text.trim(),
+      dynamicFields: dynamicFields,
+      attachments: _files,
+    );
+  }
+
+  Map<String, String> _prepareDynamicFields() {
+    final Map<String, String> data = {};
+
+    final fields = kategoriFields[_kategori] ?? [];
+
+    _dynamicControllers.forEach((key, controller) {
+      if (controller.text.trim().isEmpty) return;
+
+      final index = int.parse(key.replaceFirst("field_", ""));
+
+      final apiKey = fields[index]["label"].toString().toLowerCase().replaceAll(
+        " ",
+        "_",
+      );
+
+      data[apiKey] = controller.text.trim();
+    });
+
+    return data;
+  }
+
+  void _printDebug({
+    required bool isEdit,
+    required Map<String, String> dynamicFields,
+  }) {
+    debugPrint("");
+    debugPrint("========================================");
+    debugPrint("MODE      : ${isEdit ? "EDIT" : "CREATE"}");
+    debugPrint("TITLE     : ${_judul.text}");
+    debugPrint("CATEGORY  : $_kategori");
+    debugPrint("LOCATION  : ${_lokasi.text}");
+    debugPrint("DESC      : ${_deskripsi.text}");
+    debugPrint("FILES     : ${_files.length}");
+
+    debugPrint("----------- Dynamic Field -----------");
+
+    if (dynamicFields.isEmpty) {
+      debugPrint("Tidak ada");
+    } else {
+      dynamicFields.forEach((k, v) {
+        debugPrint("$k : $v");
+      });
+    }
+
+    debugPrint("========================================");
+  }
+
+  void _showImageDialog(dynamic imageSource, bool isFile) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              // Agar gambar bisa di-zoom
+              child: isFile
+                  ? Image.file(imageSource as File, fit: BoxFit.contain)
+                  : Image.network(imageSource as String, fit: BoxFit.contain),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

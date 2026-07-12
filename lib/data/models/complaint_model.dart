@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-class NotificationModel {
+class ComplaintModel {
   final int id;
   final String reporterName;
   final String title;
@@ -15,6 +15,7 @@ class NotificationModel {
   final String? staffName;
   final String? incidentDate;
   final String? unitName;
+  final String? stakeholder;
   final Map<String, dynamic>
   decryptedContent; // ✅ Menerima JSON object dari server
 
@@ -23,7 +24,7 @@ class NotificationModel {
   final String? senderRole;
   final bool? isRead;
 
-  NotificationModel({
+  ComplaintModel({
     required this.id,
     required this.reporterName,
     required this.title,
@@ -36,6 +37,7 @@ class NotificationModel {
     this.staffName,
     this.incidentDate,
     this.unitName,
+    this.stakeholder,
     this.decryptedContent = const {}, // ✅ Default empty map
     this.senderName,
     this.senderRole,
@@ -43,7 +45,7 @@ class NotificationModel {
   });
 
   // ✅ Factory untuk Complaint (UPDATED)
-  factory NotificationModel.fromComplaintJson(Map<String, dynamic> json) {
+  factory ComplaintModel.fromComplaintJson(Map<String, dynamic> json) {
     // 🔍 DEBUG: Print untuk melihat kunci apa saja yang masuk dari API
     print("Keys dari API: ${json.keys.toList()}");
 
@@ -61,7 +63,7 @@ class NotificationModel {
       } catch (_) {}
     }
 
-    return NotificationModel(
+    return ComplaintModel(
       id: json['id'] ?? 0,
       reporterName: json['reporter_name'] ?? 'ERROR',
       title: json['title'] ?? 'Tanpa Judul',
@@ -76,6 +78,7 @@ class NotificationModel {
       location: decrypted['lokasi']?.toString(),
       staffName: decrypted['nama_perangkat_desa']?.toString(),
       incidentDate: decrypted['tanggal_dan_waktu_kejadian']?.toString(),
+      stakeholder: decrypted['stakeholder']?.toString(),
       unitName: decrypted['nama_layanan_unit']?.toString(),
 
       // ✅ Simpan seluruh data untuk detail_card.dart
@@ -83,8 +86,8 @@ class NotificationModel {
     );
   }
   // ✅ Factory untuk Message/Chat (Tetap sama)
-  factory NotificationModel.fromMessageJson(Map<String, dynamic> json) {
-    return NotificationModel(
+  factory ComplaintModel.fromMessageJson(Map<String, dynamic> json) {
+    return ComplaintModel(
       id: json['id'] ?? 0,
       reporterName: '',
       title: '',

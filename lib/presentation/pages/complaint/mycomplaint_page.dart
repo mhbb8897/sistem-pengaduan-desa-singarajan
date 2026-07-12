@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:simpedesa/presentation/pages/complaint/complaint_detail_page.dart';
 import 'package:simpedesa/presentation/pages/login_and_register/login_page.dart';
-import '../../../data/services/notification_service.dart';
-import '../../../data/models/notification_model.dart';
+import '../../../data/services/complaint_service.dart';
+import '../../../data/models/complaint_model.dart';
 
 class MyComplaintPage extends StatefulWidget {
   const MyComplaintPage({super.key});
@@ -12,8 +12,8 @@ class MyComplaintPage extends StatefulWidget {
 }
 
 class MyComplaintPageState extends State<MyComplaintPage> {
-  final NotificationService _service = NotificationService();
-  List<NotificationModel> _complaints = [];
+  final ComplaintService _service = ComplaintService();
+  List<ComplaintModel> _complaints = [];
   bool _isLoading = true;
   String? _errorMessage;
   String _selectedStatus = "Semua";
@@ -69,8 +69,8 @@ class MyComplaintPageState extends State<MyComplaintPage> {
     }
   }
 
-  void _onComplaintTap(NotificationModel complaint) {
-    Navigator.push(
+  Future<void> _onComplaintTap(ComplaintModel complaint) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ComplaintDetailPage(
@@ -79,6 +79,10 @@ class MyComplaintPageState extends State<MyComplaintPage> {
         ),
       ),
     );
+
+    if (result == true) {
+      _loadComplaints();
+    }
   }
 
   @override
@@ -212,7 +216,7 @@ class MyComplaintPageState extends State<MyComplaintPage> {
     );
   }
 
-  Widget _buildComplaintList(List<NotificationModel> data) {
+  Widget _buildComplaintList(List<ComplaintModel> data) {
     return RefreshIndicator(
       onRefresh: _loadComplaints,
       child: ListView.separated(
@@ -287,7 +291,7 @@ class MyComplaintPageState extends State<MyComplaintPage> {
 
 // Komponen Card yang sudah di-refactor
 class _ComplaintCard extends StatelessWidget {
-  final NotificationModel complaint;
+  final ComplaintModel complaint;
   final VoidCallback onTap;
 
   const _ComplaintCard({required this.complaint, required this.onTap});

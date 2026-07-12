@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/notification_model.dart';
+import '../../../data/models/complaint_model.dart';
 
 class ComplaintDetailCard extends StatelessWidget {
-  final NotificationModel complaint;
+  final ComplaintModel complaint;
   final String title;
 
   const ComplaintDetailCard({

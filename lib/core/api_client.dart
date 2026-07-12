@@ -1,5 +1,7 @@
 // lib/core/api_client.dart
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:simpedesa/core/hmac_helper.dart';
@@ -10,13 +12,6 @@ class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
   ApiClient._internal();
-
-  // ✅ Helper: Get token dari storage
-  // Future<String?> _getToken() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   return prefs.getString(AppConstants.keyAuthToken);
-  // }
-
   // ✅ Helper: Get headers dengan Authorization
   Future<Map<String, String>> _getHeaders({
     String body = '',
@@ -152,6 +147,70 @@ class ApiClient {
     print('========================');
 
     await _handleAuthError(response);
+    return response;
+  }
+
+  Future<http.Response> multipart(
+    String endpoint, {
+    required Map<String, String> fields,
+    required List<File> files,
+    bool requireAuth = true,
+  }) async {
+    final request = http.MultipartRequest(
+      "POST",
+      Uri.parse("${AppConstants.baseUrl}/$endpoint"),
+    );
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString(AppConstants.keyAuthToken);
+    final hmacKey = prefs.getString("hmac_session_key");
+
+    if (requireAuth && token != null) {
+      request.headers["Authorization"] = "Bearer $token";
+    }
+
+    request.headers["Accept"] = "application/json";
+
+    // Tambahkan field
+    request.fields.addAll(fields);
+
+    // Upload file
+    for (final file in files) {
+      request.files.add(
+        await http.MultipartFile.fromPath("attachments[]", file.path),
+      );
+    }
+
+    // ===== HMAC =====
+    if (requireAuth && hmacKey != null) {
+      final timestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000)
+          .toString();
+
+      final signature = generateHmacSignature(
+        timestamp: timestamp,
+        body: "",
+        secretKey: hmacKey,
+      );
+
+      request.headers["X-TIMESTAMP"] = timestamp;
+      request.headers["X-SIGNATURE"] = signature;
+
+      debugPrint("");
+      debugPrint("========= HMAC =========");
+      debugPrint("Timestamp : $timestamp");
+      debugPrint("Signature : $signature");
+      debugPrint("========================");
+    }
+    final streamed = await request.send();
+
+    final response = await http.Response.fromStream(streamed);
+
+    debugPrint(response.statusCode.toString());
+    debugPrint(response.body);
+
+    await _handleAuthError(response);
+
     return response;
   }
 
