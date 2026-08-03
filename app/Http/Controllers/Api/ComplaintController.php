@@ -21,6 +21,12 @@ class ComplaintController extends Controller
             'category' => 'required|string',
             'message' => 'required|string',
             'lokasi' => 'required|string',
+            'nomor_telepon' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^[0-9+\-\s]+$/',
+            ],
         ]);
 
         try {
@@ -43,12 +49,19 @@ class ComplaintController extends Controller
             $dynamicData = [
                 'deskripsi' => $request->message,
                 'lokasi' => $request->lokasi,
+                'nomor_telepon' => $validated['nomor_telepon'],
                 // ✅ Masukkan list nama file ke dalam enkripsi
                 'bukti_pendukung' => ! empty($storedFiles) ? implode(', ', $storedFiles) : null,
             ];
 
             // Tambahkan field dinamis lainnya jika ada
-            foreach ($request->except(['title', 'category', 'message', 'lokasi', 'attachments']) as $key => $value) {
+            foreach ($request->except([
+                'title',
+                'category',
+                'message',
+                'lokasi',
+                'attachments',
+            ]) as $key => $value) {
                 $dynamicData[$key] = $value;
             }
 
@@ -131,6 +144,12 @@ class ComplaintController extends Controller
             'category' => 'required|string',
             'message' => 'required|string',
             'lokasi' => 'required|string',
+            'nomor_telepon' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^[0-9+\-\s]+$/',
+            ],
             'attachments.*' => 'nullable|file|max:5120',
         ]);
 
@@ -206,6 +225,7 @@ class ComplaintController extends Controller
             $dynamicData = [
                 'deskripsi' => $validated['message'],
                 'lokasi' => $validated['lokasi'],
+                'nomor_telepon' => $validated['nomor_telepon'],
                 'bukti_pendukung' => count($storedFiles)
                     ? implode(', ', $storedFiles)
                     : null,

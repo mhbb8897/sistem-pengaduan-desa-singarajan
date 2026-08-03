@@ -41,7 +41,7 @@ class ComplaintResource extends Resource
                 TextColumn::make('title')->label('Judul'),
                 TextColumn::make('category')->badge(),
                 TextColumn::make('status')->badge(),
-                TextColumn::make('created_at')->dateTime(),
+                TextColumn::make('created_at')->label('Tanggal')->dateTime(),
             ])
             ->actions([
                 Action::make('viewDetail')

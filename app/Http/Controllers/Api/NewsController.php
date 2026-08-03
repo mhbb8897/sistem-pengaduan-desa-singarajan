@@ -20,7 +20,10 @@ class NewsController extends Controller
                     'image_url' => asset(
                         'storage/'.str_replace('\\', '/', $news->image)
                     ),
-                    'created_at' => $news->created_at,
+                    'author' => optional($news->user)->name,
+                    'created_at' => $news->created_at
+                        ->locale('id')
+                        ->translatedFormat('l, d F Y H:i'),
                 ];
             }),
         ], 200);

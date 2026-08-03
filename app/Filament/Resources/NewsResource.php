@@ -35,18 +35,23 @@ class NewsResource extends Resource
                 TextInput::make('title')
                     ->label('Judul Berita')
                     ->required(),
-
-                FileUpload::make('image')
-                    ->label('Gambar')
-                    ->directory('news')
-                    ->image()
-                    ->imagePreviewHeight('150'),
-
+                Textarea::make('user.name')
+                    ->label('Penulis')
+                    ->rows(1)
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->formatStateUsing(fn ($record) => $record?->user?->name),
                 Textarea::make('content')
                     ->label('Isi Berita')
                     ->rows(6)
                     ->required(),
-
+                FileUpload::make('image')
+                    ->image()
+                    ->disk('public')
+                    ->directory('news')
+                    ->preserveFilenames()
+                    ->openable()
+                    ->helperText('Klik tombol Hyperlink untuk melihat gambar secara penuh melalui Tab Baru.'),
             ]);
     }
 
@@ -68,6 +73,12 @@ class NewsResource extends Resource
                 TextColumn::make('content')
                     ->label('Isi Berita')
                     ->limit(50),
+                TextColumn::make('user.name')
+                    ->label('Penulis')
+                    ->limit(50),
+                TextColumn::make('created_at')
+                    ->label('Dipublikasikan')
+                    ->limit(50),
 
             ])
             ->actions([
@@ -77,13 +88,6 @@ class NewsResource extends Resource
             ->bulkActions([
                 DeleteBulkAction::make(),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
