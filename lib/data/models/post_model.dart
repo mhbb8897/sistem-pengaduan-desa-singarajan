@@ -4,21 +4,25 @@ class PostModel {
   final String content;
   final String imageUrl;
   final String createdAt;
+  final String author;
+
   PostModel({
     required this.id,
     required this.title,
     required this.content,
     required this.imageUrl,
     required this.createdAt,
+    required this.author,
   });
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
     return PostModel(
       id: json['id'],
       title: json['title'] ?? '',
-      content: json['content'] ?? json['content'] ?? '',
+      content: json['content'] ?? '',
       imageUrl: json['image_url'] ?? '',
       createdAt: json['created_at'] ?? '',
+      author: json['author'] ?? '-',
     );
   }
 }

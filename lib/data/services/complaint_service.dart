@@ -7,7 +7,7 @@ import '../../core/api_client.dart';
 import 'dart:io';
 
 class ComplaintService {
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
+  static const String _baseUrl = 'http://172.16.0.136:8000/api';
   final _apiClient = ApiClient();
 
   // ✅ GET Complaints (dengan DEBUG LOG)

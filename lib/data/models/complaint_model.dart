@@ -12,6 +12,7 @@ class ComplaintModel {
 
   // ✅ Field Tambahan untuk Dynamic Content
   final String? location;
+  final String? phoneNumber;
   final String? staffName;
   final String? incidentDate;
   final String? unitName;
@@ -34,6 +35,7 @@ class ComplaintModel {
     this.category,
     this.attachment_url,
     this.location,
+    this.phoneNumber,
     this.staffName,
     this.incidentDate,
     this.unitName,
@@ -76,6 +78,8 @@ class ComplaintModel {
 
       // Mapping untuk kemudahan akses langsung
       location: decrypted['lokasi']?.toString(),
+      phoneNumber:
+          decrypted["nomor_telepon"] ?? "Nomor Telepon yang bisa Dihubungi",
       staffName: decrypted['nama_perangkat_desa']?.toString(),
       incidentDate: decrypted['tanggal_dan_waktu_kejadian']?.toString(),
       stakeholder: decrypted['stakeholder']?.toString(),

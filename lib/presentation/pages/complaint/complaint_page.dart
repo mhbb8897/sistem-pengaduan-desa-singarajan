@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'package:flutter/services.dart';
 import 'package:simpedesa/data/models/complaint_model.dart';
 import '../../widgets/report/whatsapp_info.dart';
 import 'package:simpedesa/core/constants.dart';
@@ -26,6 +26,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
   final _judul = TextEditingController();
   final _lokasi = TextEditingController();
   final _deskripsi = TextEditingController();
+  final _nomorTelepon = TextEditingController();
   final Map<String, TextEditingController> _dynamicControllers = {};
   final List<String> _existingImages = [];
 
@@ -80,6 +81,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
       _kategori = widget.complaint!.category!;
       _lokasi.text = widget.complaint!.getDecryptedValue("lokasi");
       _deskripsi.text = widget.complaint!.getDecryptedValue("deskripsi");
+      _nomorTelepon.text = widget.complaint!.getDecryptedValue("nomor_telepon");
       final bukti = widget.complaint!.getDecryptedValue(
         "bukti_pendukung",
         fallback: "",
@@ -180,6 +182,10 @@ class _ComplaintPageState extends State<ComplaintPage> {
       debugPrint("VALIDASI FORM GAGAL");
       return;
     }
+    if (isEdit && !_hasChanges()) {
+      _showSnackBar("Tidak ada perubahan yang disimpan.", Colors.orange);
+      return;
+    }
 
     debugPrint("FILES = ${_files.length}");
     debugPrint("EDIT = $isEdit");
@@ -193,8 +199,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
       return;
     }
 
-    if (isEdit && _files.isEmpty && _existingImages.isEmpty) {
-      setState(() {});
+    if (!isEdit && _files.isEmpty) {
       return;
     }
     setState(() {
@@ -213,18 +218,6 @@ class _ComplaintPageState extends State<ComplaintPage> {
       if (!mounted) return;
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEdit
-                  ? "Pengaduan berhasil diperbarui."
-                  : "Pengaduan berhasil dikirim.",
-            ),
-
-            backgroundColor: Colors.green,
-          ),
-        );
-
         Navigator.pop(context, true);
       } else {
         throw Exception("Operasi gagal");
@@ -490,6 +483,27 @@ class _ComplaintPageState extends State<ComplaintPage> {
             Icons.description_outlined,
             maxLines: 4,
           ),
+          _buildInput(
+            "Nomor Telepon yang Dapat Dihubungi",
+            _nomorTelepon,
+            Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(13),
+            ],
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return "Nomor telepon wajib diisi";
+              }
+
+              if (!RegExp(r'^08[0-9]{8,11}$').hasMatch(value)) {
+                return "Nomor telepon harus berupa angka";
+              }
+
+              return null;
+            },
+          ),
         ],
       ),
     );
@@ -550,12 +564,16 @@ class _ComplaintPageState extends State<ComplaintPage> {
     TextEditingController controller,
     IconData icon, {
     int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      validator: (v) =>
-          (v == null || v.trim().isEmpty) ? "$label wajib diisi" : null,
+      validator:
+          validator ??
+          (v) => (v == null || v.trim().isEmpty) ? "$label wajib diisi" : null,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: textGray),
@@ -836,6 +854,7 @@ class _ComplaintPageState extends State<ComplaintPage> {
     _lokasi.dispose();
     _deskripsi.dispose();
     _dynamicControllers.forEach((_, controller) => controller.dispose());
+    _nomorTelepon.dispose();
     super.dispose();
   }
 
@@ -892,8 +911,74 @@ class _ComplaintPageState extends State<ComplaintPage> {
 
       data[apiKey] = controller.text.trim();
     });
-
+    data["nomor_telepon"] = _nomorTelepon.text.trim();
     return data;
+  }
+
+  bool _hasChanges() {
+    if (!isEdit) return true;
+
+    final complaint = widget.complaint!;
+
+    // Field utama
+    if (_judul.text.trim() != complaint.title.trim()) {
+      return true;
+    }
+
+    if (_kategori != complaint.category) {
+      return true;
+    }
+
+    if (_lokasi.text.trim() !=
+        complaint.getDecryptedValue("lokasi", fallback: "")) {
+      return true;
+    }
+
+    if (_deskripsi.text.trim() !=
+        complaint.getDecryptedValue("deskripsi", fallback: "")) {
+      return true;
+    }
+
+    if (_nomorTelepon.text.trim() !=
+        complaint.getDecryptedValue("nomor_telepon", fallback: "")) {
+      return true;
+    }
+
+    // Field dinamis
+    final fields = kategoriFields[_kategori] ?? [];
+
+    for (int i = 0; i < fields.length; i++) {
+      final apiKey = fields[i]["label"].toString().toLowerCase().replaceAll(
+        " ",
+        "_",
+      );
+
+      final oldValue = complaint.getDecryptedValue(apiKey, fallback: "");
+
+      final newValue = _dynamicControllers["field_$i"]?.text.trim() ?? "";
+
+      if (oldValue != newValue) {
+        return true;
+      }
+    }
+
+    // Ada foto baru
+    if (_files.isNotEmpty) {
+      return true;
+    }
+
+    // Ada foto lama yang dihapus
+    final oldImages = complaint
+        .getDecryptedValue("bukti_pendukung", fallback: "")
+        .split(",")
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+
+    if (oldImages.length != _existingImages.length) {
+      return true;
+    }
+
+    return false;
   }
 
   void _printDebug({

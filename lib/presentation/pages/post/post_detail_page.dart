@@ -19,6 +19,20 @@ class PostDetailPage extends StatelessWidget {
             expandedHeight: 300,
             pinned: true,
             backgroundColor: const Color(0xFF243E8F),
+            automaticallyImplyLeading: false,
+            leading: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -90,18 +104,57 @@ class PostDetailPage extends StatelessWidget {
 
                   // Garis Pemisah
                   const Divider(height: 32, thickness: 1),
+                  const SizedBox(height: 10),
 
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person_outline,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        post.author,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+
+                      const SizedBox(width: 20),
+
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        post.createdAt.substring(0, 29),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
                   // Isi Konten
-                  Text(
-                    post.content.isNotEmpty
-                        ? post.content
-                        : 'Konten belum tersedia.',
-                    style: TextStyle(
-                      fontSize: 16,
-                      height: 1.8,
-                      color: Colors.grey[800],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 13),
+                    child: Text(
+                      post.content.isNotEmpty
+                          ? post.content
+                          : 'Konten belum tersedia.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.8,
+                        color: Colors.grey[800],
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 40),
                 ],
               ),

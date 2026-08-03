@@ -11,6 +11,23 @@ class ComplaintDetailCard extends StatelessWidget {
     required this.title,
   });
 
+  /// Mapping key JSON -> Label yang ditampilkan
+  static const Map<String, String> _fieldLabels = {
+    'deskripsi': 'DESKRIPSI',
+    'lokasi': 'LOKASI KEJADIAN',
+    'nomor_telepon': 'NOMOR TELEPON YANG DAPAT DIHUBUNGI',
+
+    'nama_perangkat_desa': 'NAMA PERANGKAT DESA',
+    'nama_layanan_/_unit': 'NAMA LAYANAN / UNIT',
+    'nama_layanan_unit': 'NAMA LAYANAN / UNIT',
+
+    'pihak_yang_terlibat': 'PIHAK YANG TERLIBAT',
+  };
+
+  String _getLabel(String key) {
+    return _fieldLabels[key] ?? key.replaceAll('_', ' ').toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> content = complaint.decryptedContent;
@@ -18,7 +35,7 @@ class ComplaintDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.transparent, // Background mengikuti parent (putih)
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -30,7 +47,7 @@ class ComplaintDetailCard extends StatelessWidget {
               Text(
                 "DETAIL PENGADUAN",
                 style: TextStyle(
-                  color: Color(0xFF243E8F), // Menggunakan warna biru tema
+                  color: Color(0xFF243E8F),
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -66,6 +83,7 @@ class ComplaintDetailCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
+
                     return Container(
                       height: 200,
                       color: Colors.grey.shade100,
@@ -155,6 +173,8 @@ class ComplaintDetailCard extends StatelessWidget {
       if (value == null || value.toString().trim().isEmpty) return;
 
       final lowerKey = key.toLowerCase();
+
+      // Tidak ditampilkan karena sudah memiliki widget khusus
       if (lowerKey.contains('bukti') ||
           lowerKey.contains('pendukung') ||
           lowerKey.contains('attachment_url_path') ||
@@ -162,7 +182,7 @@ class ComplaintDetailCard extends StatelessWidget {
         return;
       }
 
-      final label = key.replaceAll('_', ' ').toUpperCase();
+      final label = _getLabel(key);
 
       widgets.add(
         Padding(
@@ -179,16 +199,15 @@ class ComplaintDetailCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              if (key.contains('deskripsi') ||
-                  key.contains('kronologi') ||
+
+              if (key == 'deskripsi' ||
+                  key == 'kronologi' ||
                   value.toString().length > 50)
                 Container(
-                  padding: const EdgeInsets.all(12),
                   width: double.infinity,
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(
-                      0xFFF5F7FA,
-                    ), // Background abu-abu kebiruan terang
+                    color: const Color(0xFFF5F7FA),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade200),
                   ),

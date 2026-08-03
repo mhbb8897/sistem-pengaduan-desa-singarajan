@@ -15,7 +15,7 @@ class ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         // Selaraskan dengan warna AppBar (Admin) dan warna Kirim (User)
-        color: isAdmin ? const Color(0xFF243E8F) : const Color(0xFFE67E22),
+        color: isAdmin ? const Color(0xFF243E8F) : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -32,10 +32,10 @@ class ChatBubble extends StatelessWidget {
             children: [
               Text(
                 message.senderName ?? (isAdmin ? "Petugas" : "Anda"),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: isAdmin ? Colors.white : Colors.black87,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
               const SizedBox(width: 8),
@@ -46,10 +46,10 @@ class ChatBubble extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isAdmin ? "PETUGAS" : "PELAPOR",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
+                  isAdmin ? "PETUGAS" : "ANDA",
+                  style: TextStyle(
+                    color: isAdmin ? Colors.white : const Color(0xFF243E8F),
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -59,12 +59,19 @@ class ChatBubble extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             message.message,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(
+              color: isAdmin ? Colors.white : Colors.black87,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             message.formattedDate,
-            style: const TextStyle(color: Colors.white70, fontSize: 10),
+            style: TextStyle(
+              color: isAdmin ? Colors.white70 : Colors.grey.shade600,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
